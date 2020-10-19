@@ -41,16 +41,18 @@ public struct Bip32 {
         }
     }
 
+    let network: Network
+
     let versionPrefix: UInt32
     let depth: UInt8
     let fingerprint: UInt32
     let childIndex: UInt32
     let chainCode: Data
-    let network: Network
 
-    let privateKey: Data?
-    let publicKey: Data
+    let privateKey: PrivateKey?
+    let publicKey: PublicKey
 
+    /// Create a Bip32 HD Key from an existing Seed
     public init(seed: Data, network: Network = .mainnet) {
         let output = Crypto.HMACSHA512(key: "Bitcoin seed".data(using: .ascii)!, data: seed)
         let privateKey = output[0..<32]
@@ -88,12 +90,17 @@ public struct Bip32 {
         let keyBytes = Data(data[45..<78])
 
         if (isPrivate == true) && (keyBytes[0] == 0x0) {
-            privateKey = keyBytes[1..<33]
-            let pubKey = _SwiftKey.computePublicKey(fromPrivateKey: privateKey!, compression: true)
-            publicKey = pubKey
+
+            // keyBytes contains a Private Key (32 Bytes)
+            let privateKeyBytes = keyBytes[1..<33]
+            let privateKeyNumber = BInt(data: privateKeyBytes)
+            privateKey = PrivateKey(bn: privateKeyNumber, network: network)
+            publicKey = privateKey!.publicKey
+
         } else if isPublic == true && (keyBytes[0] == 0x02 || keyBytes[0] == 0x03) {
+            // keyBytes contains a Compressed Public Key (33 Bytes)
             privateKey = nil
-            publicKey = data[45..<78]
+            publicKey = PublicKey(fromDer: keyBytes)!
         } else {
             return nil
         }
@@ -104,25 +111,27 @@ public struct Bip32 {
     }
 
     init(privateKey: Data, chainCode: Data, network: Network, depth: UInt8, fingerprint: UInt32, childIndex: UInt32) {
-        self.privateKey = privateKey
-        self.publicKey = _SwiftKey.computePublicKey(fromPrivateKey: privateKey, compression: true)
         self.chainCode = chainCode
         self.network = network
         self.depth = depth
         self.fingerprint = fingerprint
         self.childIndex = childIndex
         self.versionPrefix = network.bip32.privKey
+
+        self.privateKey = PrivateKey(bn: BInt(data: privateKey), network: network)
+        self.publicKey = self.privateKey!.publicKey
     }
 
     init(publicKey: Data, chainCode: Data, network: Network, depth: UInt8, fingerprint: UInt32, childIndex: UInt32) {
-        self.privateKey = nil
         self.chainCode = chainCode
         self.network = network
         self.depth = depth
         self.fingerprint = fingerprint
         self.childIndex = childIndex
         self.versionPrefix = network.bip32.pubKey
-        self.publicKey = publicKey
+
+        privateKey = nil
+        self.publicKey = PublicKey(fromDer: publicKey)!
     }
 
     /// Returns the extended key as a string
@@ -136,7 +145,7 @@ public struct Bip32 {
             return self
         }
 
-        return Bip32(publicKey: publicKey, chainCode: chainCode, network: network, depth: depth, fingerprint: fingerprint, childIndex: childIndex)
+        return Bip32(publicKey: publicKey.toDer(), chainCode: chainCode, network: network, depth: depth, fingerprint: fingerprint, childIndex: childIndex)
     }
 
     public func toData() -> Data {
@@ -151,14 +160,14 @@ public struct Bip32 {
             extendedPrivateKeyData += childIndex.littleEndian
             extendedPrivateKeyData += chainCode
             extendedPrivateKeyData += UInt8(0)
-            extendedPrivateKeyData += privateKey!
+            extendedPrivateKeyData += privateKey!.data
         case network.bip32.pubKey:
             extendedPrivateKeyData += versionPrefix.bigEndian
             extendedPrivateKeyData += depth.littleEndian
             extendedPrivateKeyData += fingerprint.littleEndian
             extendedPrivateKeyData += childIndex.littleEndian
             extendedPrivateKeyData += chainCode
-            extendedPrivateKeyData += publicKey
+            extendedPrivateKeyData += publicKey.toDer()
         default:
             fatalError("Bip32: Invalid version byte")
         }
@@ -173,8 +182,8 @@ public struct Bip32 {
         }
 
         guard let derrived = _HDKey(
-            privateKey: privateKey,
-            publicKey: publicKey,
+            privateKey: privateKey?.data,
+            publicKey: publicKey.toDer(),
             chainCode: chainCode,
             depth: depth,
             fingerprint: fingerprint,
@@ -229,6 +238,18 @@ extension Bip32: CustomStringConvertible {
         return toString()
     }
 }
+
+//extension PrivateKey {
+//
+//    public init?(bip32: Bip32) {
+//        guard let data = bip32.privateKey else {
+//            return nil
+//        }
+//
+//        self.init(data: data)
+//    }
+//
+//}
 
 //
 //  BitcoinKitPrivateSwift.swift
@@ -341,6 +362,44 @@ class _SwiftKey {
             return Data()
         }
         if compression {
+            var serializedPubkey = [UInt8](repeating: 0, count: 33)
+            var outputlen = 33
+            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_COMPRESSED)) == 0 {
+                return Data()
+            }
+            if outputlen != 33 {
+                return Data()
+            }
+            return Data(serializedPubkey)
+        } else {
+            var serializedPubkey = [UInt8](repeating: 0, count: 65)
+            var outputlen = 65
+            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_UNCOMPRESSED)) == 0 {
+                return Data()
+            }
+            if outputlen != 65 {
+                return Data()
+            }
+            return Data(serializedPubkey)
+        }
+    }
+
+    /// Serialize a publicKey
+    ///
+    /// Useful to convert a compressed pubKey into an uncompressed pubKey
+    public static func serializePublicKey(from publicKey: Data, compressed: Bool = true) -> Data {
+        guard let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_VERIFY)) else {
+            return Data()
+        }
+        defer { secp256k1_context_destroy(ctx) }
+        var pubkey = secp256k1_pubkey()
+        var input: [UInt8] = publicKey.map { $0 }
+
+        if secp256k1_ec_pubkey_parse(ctx, &pubkey, &input, input.count) == 0 {
+            return Data()
+        }
+
+        if compressed {
             var serializedPubkey = [UInt8](repeating: 0, count: 33)
             var outputlen = 33
             if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_COMPRESSED)) == 0 {

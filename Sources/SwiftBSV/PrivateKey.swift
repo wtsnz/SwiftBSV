@@ -19,6 +19,17 @@ public struct PrivateKey {
     /// The Bitcoin Network this PrivateKey belongs to.
     public let network: Network
 
+    /// The raw private key data
+    var data: Data {
+        return bn.data
+    }
+
+    /// Return the associated Public Key
+    var publicKey: PublicKey {
+        let publicKeyData = _SwiftKey.computePublicKey(fromPrivateKey: data, compression: true)
+        return PublicKey(fromDer: publicKeyData)!
+    }
+
     public init(network: Network = .mainnet) {
         var buffer: Data
         var number: BInt
@@ -34,27 +45,32 @@ public struct PrivateKey {
         self.network = network
     }
 
+    public init(rawData: Data, network: Network = .mainnet) {
+        let number = BInt(data: rawData)
+        self.init(bn: number, network: network)
+    }
+
     public init(bn: BInt, isCompressed: Bool = true, network: Network = .mainnet) {
         self.bn = bn
         self.network = network
         self.isCompressed = isCompressed
     }
 
-    public init(data: Data, network: Network = .mainnet) {
-        if data.count == 1 + 32 + 1 && data[1 + 32 + 1 - 1] == 1 {
+    public init(buffer: Data, network: Network = .mainnet) {
+        if buffer.count == 1 + 32 + 1 && buffer[1 + 32 + 1 - 1] == 1 {
             isCompressed = true
-        } else if data.count == 1 + 32 {
+        } else if buffer.count == 1 + 32 {
             isCompressed = false
         } else {
             fatalError("PrivateKey: Invalid length of data. Must be 33 for uncompressed, or 34 for compressed priv key")
         }
 
-        if data[0] != network.privateKeyVersionByteNum {
+        if buffer[0] != network.privateKeyVersionByteNum {
             fatalError("PrivateKey: Invalid private key version number")
         }
 
-        let buffer = data[1..<33]
-        let bn = BInt(data: buffer)
+        let data = buffer[1..<33]
+        let bn = BInt(data: data)
 
         self.bn = bn
         self.network = network
@@ -65,10 +81,16 @@ public struct PrivateKey {
             return nil
         }
 
-        self.init(data: data, network: network)
+        self.init(buffer: data, network: network)
     }
 
-    public func toData() -> Data {
+    /// Return the Wif encoded string
+    public func toWif() -> String {
+        Base58Check.encode(toWifData())
+    }
+
+    /// Return the Wif encoded data
+    func toWifData() -> Data {
         var data = Data()
         data += network.privateKeyVersionByteNum
 
@@ -80,10 +102,6 @@ public struct PrivateKey {
         }
 
         return data
-    }
-
-    public func toWif() -> String {
-        Base58Check.encode(toData())
     }
 
 }

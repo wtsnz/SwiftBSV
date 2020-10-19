@@ -12,7 +12,7 @@ struct Point {
 
     // From the secp256k1 curve definition
     // https://github.com/indutny/elliptic/blob/master/lib/elliptic/curves.js#L176
-    static let P = BInt(str: "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", radix: 16)!
+//    static let P = BInt(str: "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", radix: 16)!
     static let N = BInt(str: "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", radix: 16)!
 
     public let x: BInt
@@ -23,16 +23,24 @@ struct Point {
         self.y = y
     }
 
-    static func calculateYfromX(x: BInt, isOdd: Bool) -> BInt? {
-        let p = Point.P
-        let y_sq = (BIntMath.mod_exp(x, BInt(3), p) + BInt(7)) % p
-        let y = BIntMath.mod_exp(y_sq, (p + BInt(1)) / BInt(4), p)
+    /// Init Point from a DER buffer
+    /// - Parameter buffer: the DER formatted buffer
+    public init?(buffer: Data) {
+        let uncompressedPublicKeyData = _SwiftKey.serializePublicKey(from: buffer, compressed: false)
 
-        if BIntMath.mod_exp(y, BInt(2), p) != y_sq {
-            return nil
+        guard uncompressedPublicKeyData.count == 65 else {
+            fatalError("Point: invalid uncompressedPublicKeyData length")
         }
 
-        return y
+        let x = uncompressedPublicKeyData.dropFirst().prefix(32)
+        let y = uncompressedPublicKeyData.dropFirst().suffix(32)
+
+        self.x = BInt(data: x)
+        self.y = BInt(data: y)
+    }
+
+    func serialize(compressed: Bool = true) -> Data {
+        return _SwiftKey.serializePublicKey(from: x.data, compressed: compressed)
     }
 
 }

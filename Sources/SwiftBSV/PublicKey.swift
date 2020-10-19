@@ -32,6 +32,7 @@ struct PublicKey {
     ///   - buffer: Buffer containing the DER formatted PublicKey. This can be in the compressed, or uncompressed format.
     ///   - isStrict: See above discussion
     public init?(fromDer buffer: Data, isStrict strict: Bool = true) {
+        /// The buffer is uncompressed, and contains the X and Y coordinate of the Point
         if buffer[0] == 0x04 || (!strict && (buffer[0] == 0x06 || buffer[0] == 0x07)) {
 
             if buffer.count != 65 {
@@ -47,28 +48,15 @@ struct PublicKey {
             point = Point(x: x, y: y)
             isCompressed = false
 
-        } else if buffer[0] == 0x03 {
+        }
+        // The buffer is compressed, and contains only the X coordinate of the Point
+        else if buffer[0] == 0x03 || buffer[0] == 0x02 {
 
-            let xBuffer = Data(buffer.suffix(from: 1))
-
-            let x = BInt(data: xBuffer)
-            guard let y = Point.calculateYfromX(x: x, isOdd: true) else {
+            guard let point = Point(buffer: buffer) else {
                 return nil
             }
 
-            point = Point(x: x, y: y)
-            isCompressed = true
-
-        } else if buffer[0] == 0x02 {
-
-            let xBuffer = Data(buffer.suffix(from: 1))
-
-            let x = BInt(data: xBuffer)
-            guard let y = Point.calculateYfromX(x: x, isOdd: false) else {
-                return nil
-            }
-
-            point = Point(x: x, y: y)
+            self.point = point
             isCompressed = true
 
         } else {
@@ -89,7 +77,6 @@ struct PublicKey {
             data += isEven ? UInt8(0x02) : UInt8(0x03)
             data += xBuffer
             return data
-
         } else {
             var data = Data()
             data += UInt8(0x04)
