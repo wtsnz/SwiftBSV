@@ -54,7 +54,7 @@ public struct Bip32 {
 
     /// Create a Bip32 HD Key from an existing Seed
     public init(seed: Data, network: Network = .mainnet) {
-        let output = Crypto.HMACSHA512(key: "Bitcoin seed".data(using: .ascii)!, data: seed)
+        let output = Crypto.hmacsha512(key: "Bitcoin seed".data(using: .ascii)!, data: seed)
         let privateKey = output[0..<32]
         let chainCode = output[32..<64]
         self.init(privateKey: privateKey, chainCode: chainCode, network: network)
@@ -306,7 +306,7 @@ class _HDKey {
         var childIndex = CFSwapInt32HostToBig(hardened ? (0x80000000 as UInt32) | childIndex : childIndex)
         data.append(Data(bytes: &childIndex, count: MemoryLayout<UInt32>.size))
 
-        let digest = Crypto.HMACSHA512(key: chainCode, data: data)
+        let digest = Crypto.hmacsha512(key: chainCode, data: data)
         let derivedPrivateKey: [UInt8] = digest[0..<32].map { $0 }
         let derivedChainCode: [UInt8] = digest[32..<64].map { $0 }
         var result: Data
@@ -344,81 +344,5 @@ class _HDKey {
 
         let fingerPrint: UInt32 = Crypto.sha256ripemd160(publicKey).to(type: UInt32.self)
         return _HDKey(privateKey: result, publicKey: result, chainCode: Data(derivedChainCode), depth: self.depth + 1, fingerprint: fingerPrint, childIndex: childIndex)
-    }
-}
-
-class _SwiftKey {
-    public static func computePublicKey(fromPrivateKey privateKey: Data, compression: Bool) -> Data {
-        guard let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN)) else {
-            return Data()
-        }
-        defer { secp256k1_context_destroy(ctx) }
-        var pubkey = secp256k1_pubkey()
-        var seckey: [UInt8] = privateKey.map { $0 }
-        if seckey.count != 32 {
-            return Data()
-        }
-        if secp256k1_ec_pubkey_create(ctx, &pubkey, &seckey) == 0 {
-            return Data()
-        }
-        if compression {
-            var serializedPubkey = [UInt8](repeating: 0, count: 33)
-            var outputlen = 33
-            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_COMPRESSED)) == 0 {
-                return Data()
-            }
-            if outputlen != 33 {
-                return Data()
-            }
-            return Data(serializedPubkey)
-        } else {
-            var serializedPubkey = [UInt8](repeating: 0, count: 65)
-            var outputlen = 65
-            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_UNCOMPRESSED)) == 0 {
-                return Data()
-            }
-            if outputlen != 65 {
-                return Data()
-            }
-            return Data(serializedPubkey)
-        }
-    }
-
-    /// Serialize a publicKey
-    ///
-    /// Useful to convert a compressed pubKey into an uncompressed pubKey
-    public static func serializePublicKey(from publicKey: Data, compressed: Bool = true) -> Data {
-        guard let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_VERIFY)) else {
-            return Data()
-        }
-        defer { secp256k1_context_destroy(ctx) }
-        var pubkey = secp256k1_pubkey()
-        var input: [UInt8] = publicKey.map { $0 }
-
-        if secp256k1_ec_pubkey_parse(ctx, &pubkey, &input, input.count) == 0 {
-            return Data()
-        }
-
-        if compressed {
-            var serializedPubkey = [UInt8](repeating: 0, count: 33)
-            var outputlen = 33
-            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_COMPRESSED)) == 0 {
-                return Data()
-            }
-            if outputlen != 33 {
-                return Data()
-            }
-            return Data(serializedPubkey)
-        } else {
-            var serializedPubkey = [UInt8](repeating: 0, count: 65)
-            var outputlen = 65
-            if secp256k1_ec_pubkey_serialize(ctx, &serializedPubkey, &outputlen, &pubkey, UInt32(SECP256K1_EC_UNCOMPRESSED)) == 0 {
-                return Data()
-            }
-            if outputlen != 65 {
-                return Data()
-            }
-            return Data(serializedPubkey)
-        }
     }
 }

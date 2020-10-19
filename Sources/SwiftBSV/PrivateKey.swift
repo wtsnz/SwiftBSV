@@ -26,7 +26,7 @@ public struct PrivateKey {
 
     /// Return the associated Public Key
     var publicKey: PublicKey {
-        let publicKeyData = _SwiftKey.computePublicKey(fromPrivateKey: data, compression: true)
+        let publicKeyData = Crypto.computePublicKey(fromPrivateKey: data, compressed: true)
         return PublicKey(fromDer: publicKeyData)!
     }
 

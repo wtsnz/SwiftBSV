@@ -8,11 +8,16 @@
 
 import Foundation
 
+// TODO: Do we really need the BInt class?
+// We don't do any math on them in Swift, so why add the complication? We can simply store the
+// backing Data in the point, and defer to the secp256k1 lib to do the maths...
+
 public struct Point {
 
     // From the secp256k1 curve definition
     // https://github.com/indutny/elliptic/blob/master/lib/elliptic/curves.js#L176
 //    static let P = BInt(str: "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", radix: 16)!
+
     static let N = BInt(str: "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", radix: 16)!
 
     public let x: BInt
@@ -26,7 +31,7 @@ public struct Point {
     /// Init Point from a DER buffer
     /// - Parameter buffer: the DER formatted buffer
     public init?(buffer: Data) {
-        let uncompressedPublicKeyData = _SwiftKey.serializePublicKey(from: buffer, compressed: false)
+        let uncompressedPublicKeyData = Crypto.serializePublicKey(from: buffer, compressed: false)
 
         guard uncompressedPublicKeyData.count == 65 else {
             fatalError("Point: invalid uncompressedPublicKeyData length")
@@ -40,7 +45,7 @@ public struct Point {
     }
 
     func serialize(compressed: Bool = true) -> Data {
-        return _SwiftKey.serializePublicKey(from: x.data, compressed: compressed)
+        return Crypto.serializePublicKey(from: x.data, compressed: compressed)
     }
 
 }
