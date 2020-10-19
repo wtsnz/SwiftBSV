@@ -19,7 +19,7 @@ public struct PrivateKey {
     /// The Bitcoin Network this PrivateKey belongs to.
     public let network: Network
 
-    public init(network: Network = .bitcoin) {
+    public init(network: Network = .mainnet) {
         var buffer: Data
         var number: BInt
         var condition: Bool
@@ -34,13 +34,13 @@ public struct PrivateKey {
         self.network = network
     }
 
-    public init(bn: BInt, isCompressed: Bool = true, network: Network = .bitcoin) {
+    public init(bn: BInt, isCompressed: Bool = true, network: Network = .mainnet) {
         self.bn = bn
         self.network = network
         self.isCompressed = isCompressed
     }
 
-    public init(data: Data, network: Network = .bitcoin) {
+    public init(data: Data, network: Network = .mainnet) {
         if data.count == 1 + 32 + 1 && data[1 + 32 + 1 - 1] == 1 {
             isCompressed = true
         } else if data.count == 1 + 32 {
@@ -60,7 +60,7 @@ public struct PrivateKey {
         self.network = network
     }
 
-    public init?(wif: String, network: Network = .bitcoin) {
+    public init?(wif: String, network: Network = .mainnet) {
         guard let data = Base58Check.decode(wif) else {
             return nil
         }

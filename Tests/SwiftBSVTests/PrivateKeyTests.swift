@@ -19,13 +19,13 @@ class PrivateKeyTests: XCTestCase {
 
 
     func testRandom() {
-        let privateKey = PrivateKey(network: .bitcoinTestnet)
+        let privateKey = PrivateKey(network: .testnet)
         XCTAssertEqual(privateKey.toWif().prefix(1), "c")
     }
 
     func testBInt() {
         let bn = BInt(0)
-        let privateKey = PrivateKey(bn: bn, network: .bitcoinTestnet)
+        let privateKey = PrivateKey(bn: bn, network: .testnet)
         XCTAssertEqual(privateKey.bn.asString(radix: 16), bn.asString(radix: 16))
     }
 
@@ -35,12 +35,12 @@ class PrivateKeyTests: XCTestCase {
     }
 
     func testUncompressedTestnet() {
-        let privateKey = PrivateKey(bn: BInt(data: buf), isCompressed: false, network: .bitcoinTestnet)
+        let privateKey = PrivateKey(bn: BInt(data: buf), isCompressed: false, network: .testnet)
         XCTAssertEqual(privateKey.toWif(), enctu)
     }
 
     func testUncompressedMainnet() {
-        let privateKey = PrivateKey(bn: BInt(data: buf), isCompressed: false, network: .bitcoin)
+        let privateKey = PrivateKey(bn: BInt(data: buf), isCompressed: false, network: .mainnet)
         XCTAssertEqual(privateKey.toWif(), encmu)
     }
 

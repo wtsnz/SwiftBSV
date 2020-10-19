@@ -51,7 +51,7 @@ public struct Bip32 {
     let privateKey: Data?
     let publicKey: Data
 
-    public init(seed: Data, network: Network = .bitcoin) {
+    public init(seed: Data, network: Network = .mainnet) {
         let output = Crypto.HMACSHA512(key: "Bitcoin seed".data(using: .ascii)!, data: seed)
         let privateKey = output[0..<32]
         let chainCode = output[32..<64]
@@ -68,10 +68,10 @@ public struct Bip32 {
         guard let buffer = Base58Check.decode(string) else {
             return nil
         }
-        self.init(buffer, network: .bitcoin)
+        self.init(buffer, network: .mainnet)
     }
 
-    public init?(_ data: Data, network: Network = .bitcoin) {
+    public init?(_ data: Data, network: Network = .mainnet) {
         self.network = network
 
         guard data.count == 78 else { return nil }
@@ -99,7 +99,7 @@ public struct Bip32 {
         }
     }
 
-    init(privateKey: Data, chainCode: Data, network: Network = .bitcoin) {
+    init(privateKey: Data, chainCode: Data, network: Network = .mainnet) {
         self.init(privateKey: privateKey, chainCode: chainCode, network: network, depth: 0, fingerprint: 0, childIndex: 0)
     }
 

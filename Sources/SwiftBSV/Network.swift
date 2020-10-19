@@ -8,10 +8,14 @@
 
 import Foundation
 
+/// The Bitcoin SV Network configuration
 public enum Network {
 
-    case bitcoin
-    case bitcoinTestnet
+    /// The BitcoinSV Main Network
+    case mainnet
+
+    /// The BitcoinSV Test Network
+    case testnet
 
     public struct Bip32 {
         var pubKey: UInt32
@@ -20,9 +24,9 @@ public enum Network {
 
     public var bip32: Bip32 {
         switch self {
-        case .bitcoin:
+        case .mainnet:
             return .init(pubKey: 0x0488b21e, privKey: 0x0488ade4)
-        case .bitcoinTestnet:
+        case .testnet:
             return .init(pubKey: 0x043587cf, privKey: 0x04358394)
         }
     }
@@ -30,9 +34,9 @@ public enum Network {
     // P2PKH
     public var publicKeyHash: UInt8 {
         switch self {
-        case .bitcoin:
+        case .mainnet:
             return 0x00
-        case .bitcoinTestnet:
+        case .testnet:
             return 0x6f
         }
     }
@@ -51,9 +55,9 @@ public enum Network {
     /// PrivKey versionByteNum
     public var privateKeyVersionByteNum: UInt8 {
         switch self {
-        case .bitcoin:
+        case .mainnet:
             return 0x80
-        case .bitcoinTestnet:
+        case .testnet:
             return 0xef
         }
     }
@@ -68,18 +72,18 @@ public enum Network {
     
     public var coinType: UInt32 {
         switch self {
-        case .bitcoin:
+        case .mainnet:
             return 0
-        case .bitcoinTestnet:
+        case .testnet:
             return 0
         }
     }
     
     public var scheme: String {
         switch self {
-        case .bitcoin:
+        case .mainnet:
             return "bitcoin"
-        case .bitcoinTestnet:
+        case .testnet:
             return "bitcoin"
         }
     }
