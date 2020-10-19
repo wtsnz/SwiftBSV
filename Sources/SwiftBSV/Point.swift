@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct Point {
+public struct Point {
 
     // From the secp256k1 curve definition
     // https://github.com/indutny/elliptic/blob/master/lib/elliptic/curves.js#L176

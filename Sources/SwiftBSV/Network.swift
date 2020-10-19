@@ -31,6 +31,19 @@ public enum Network {
         }
     }
 
+    public struct Address {
+        let publicKeyHash: UInt8
+    }
+
+    public var address: Address {
+        switch self {
+        case .mainnet:
+            return Address(publicKeyHash: 0x00)
+        case .testnet:
+            return Address(publicKeyHash: 0x6f)
+        }
+    }
+
     // P2PKH
     public var publicKeyHash: UInt8 {
         switch self {

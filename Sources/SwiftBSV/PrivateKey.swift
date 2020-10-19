@@ -45,8 +45,8 @@ public struct PrivateKey {
         self.network = network
     }
 
-    public init(rawData: Data, network: Network = .mainnet) {
-        let number = BInt(data: rawData)
+    public init(data: Data, network: Network = .mainnet) {
+        let number = BInt(data: data)
         self.init(bn: number, network: network)
     }
 

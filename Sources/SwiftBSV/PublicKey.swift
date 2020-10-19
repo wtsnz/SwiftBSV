@@ -8,12 +8,12 @@
 
 import Foundation
 
-struct PublicKey {
+public struct PublicKey {
 
     /// The Point of the public key on the curve.
     public let point: Point
 
-    let isCompressed: Bool
+    public var isCompressed: Bool
 
     /// Create a PublicKey from a DER hex string.
     public init?(hex: String) {
@@ -70,7 +70,7 @@ struct PublicKey {
         let xBuffer = point.x.data
         let yBuffer = point.y.data
 
-        if isCompressed {
+        if (isCompressed) {
             let isEven = yBuffer[yBuffer.count - 1] % 2 == 0
             var data = Data()
             // Add the prefix

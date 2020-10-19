@@ -11,6 +11,7 @@ import SwiftBSV
 class MnemonicsViewModel: ObservableObject {
 
     @Published var mnemonicString: String = ""
+    @Published var xprivKey: String = ""
     @Published var address: String = ""
 
     @Published var transactionASM: String = ""
@@ -36,12 +37,16 @@ class MnemonicsViewModel: ObservableObject {
         self.mnemonicString = string
 
         let seed = Bip39.createSeed(mnemonic: mnemonicString)
+
+        let key = Bip32(seed: seed)
+
+        xprivKey = key.toString()
+
 //        let privateKey = PrivateKey(seed: seed)
 
-//        self.address = privateKey.publicKey.address
+        self.address = Address(key).toString()
 
     }
-
 
 }
 
@@ -87,6 +92,11 @@ struct Mnemonics: View {
                 ), onEditingChanged: { _ in
 
                 })
+
+                TextField("Address", text: Binding<String>(
+                    get: { self.viewModel.xprivKey },
+                    set: { new in return }
+                ))
 
                 TextField("Address", text: Binding<String>(
                     get: { self.viewModel.address },

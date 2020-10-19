@@ -280,7 +280,7 @@ class Bip32Tests: XCTestCase {
     func testCommunityDerrivedTestVector() {
 
         let bip32 = Bip32(seed: Data(hex: "f27fd395d30d00f1c11b7551a93961ca41c0a78bce21e9a618e83a99cf74aec159139ef3ef078bc0038557b7cb689933d0806ce33571df78bc4397e7f9976ff2"))
-//
+
         let derived = bip32
             .derived(at: .hardened(44))!
             .derived(at: .hardened(0))!
@@ -288,14 +288,13 @@ class Bip32Tests: XCTestCase {
             .derived(at: .notHardened(1))!
             .derived(at: .notHardened(19))!
 
-        let privateKey = PrivateKey(rawData: derived.privateKey!.data)
+        let privateKey = derived.privateKey!
 
         XCTAssertEqual(privateKey.bn.data.count, 32)
         XCTAssertEqual(privateKey.bn.data.hex, "00f2c37dad54d1d2be57b06653ea655c6fd8eb3ca3f0b9671e036d50061d265b")
         XCTAssertEqual(privateKey.toWif(), "KwFZ6jFtuvBu7w4R4x4WpzQgSSYTHLEw8Pr2PUkWjADkHJUPNDVg")
         XCTAssertEqual(privateKey.publicKey.toDer().hex, "02a712f894d58baef44e4fbbc26ed6ca89487db1f17e944f9b45ca2ae666e99d72")
-
-//        XCTAssertEqual(derrived.publicKey.address, "17rxURoF96VhmkcEGCj5LNQkmN9HVhWb7F")
+        XCTAssertEqual(Address(privateKey).toString(), "1DPUysR46jraybTwP3PfSbcBENeLScLxx")
     }
 
 }
