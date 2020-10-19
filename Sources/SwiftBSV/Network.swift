@@ -14,27 +14,18 @@ public enum Network {
     case bitcoinTestnet
 
     public struct Bip32 {
-        var pubKey: Data
-        var privKey: Data
+        var pubKey: UInt32
+        var privKey: UInt32
     }
 
     public var bip32: Bip32 {
         switch self {
         case .bitcoin:
-            return .init(pubKey: Data(hex: "0x0488b21e"), privKey: Data(hex: "0x0488ade4"))
+            return .init(pubKey: 0x0488b21e, privKey: 0x0488ade4)
         case .bitcoinTestnet:
-            return .init(pubKey: Data(hex: "0x043587cf"), privKey: Data(hex: "0x04358394"))
+            return .init(pubKey: 0x043587cf, privKey: 0x04358394)
         }
     }
-
-//    public var privateKeyVersion: UInt32 {
-//        switch self {
-//        case .bitcoin:
-//            return 0x0488ADE4
-//        case .bitcoinTestnet:
-//            return 0x04358394
-//        }
-//    }
 
     // P2PKH
     public var publicKeyHash: UInt8 {

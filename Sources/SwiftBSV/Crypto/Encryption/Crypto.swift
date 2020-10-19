@@ -10,6 +10,15 @@ import CryptoSwift
 import Foundation
 
 public final class Crypto {
+
+    public static func ripemd160(_ data: Data) -> Data {
+        return RIPEMD160.hash(data)
+    }
+
+    public static func sha256ripemd160(_ data: Data) -> Data {
+        return ripemd160(data.sha256())
+    }
+
    public static func HMACSHA512(key: Data, data: Data) -> Data {
         let output: [UInt8]
         do {
@@ -19,7 +28,7 @@ public final class Crypto {
         }
         return Data(output)
     }
-    
+
     public static func PBKDF2SHA512(password: [UInt8], salt: [UInt8]) -> Data {
         let output: [UInt8]
         do {
@@ -29,21 +38,21 @@ public final class Crypto {
         }
         return Data(output)
     }
-    
+
     public static func generatePublicKey(data: Data, compressed: Bool) -> Data {
         let encrypter = EllipticCurveEncrypterSecp256k1()
         var publicKey = encrypter.createPublicKey(privateKey: data)
         return encrypter.export(publicKey: &publicKey, compressed: compressed)
     }
-    
+
     public static func sha3keccak256(data:Data) -> Data {
         return Data(SHA3(variant: .keccak256).calculate(for: data.bytes))
     }
-    
+
     public static func hashSHA3_256(_ data: Data) -> Data {
         return Data(CryptoSwift.SHA3(variant: .sha256).calculate(for: data.bytes))
     }
-    
+
     public static func sign(_ hash: Data, privateKey: Data) throws -> Data {
         let encrypter = EllipticCurveEncrypterSecp256k1()
         guard var signatureInInternalFormat = encrypter.sign(hash: hash, privateKey: privateKey) else {
@@ -51,6 +60,5 @@ public final class Crypto {
         }
         return encrypter.export(signature: &signatureInInternalFormat)
     }
-    
-}
 
+}
