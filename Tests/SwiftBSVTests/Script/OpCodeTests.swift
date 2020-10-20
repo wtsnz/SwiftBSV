@@ -32,6 +32,26 @@ class OpCodeTests: XCTestCase {
         // Put setup code here. This method is called before the invocation of each test method in the class.
         context = ScriptExecutionContext()
     }
+
+    func testNumberConversions() {
+        XCTAssertEqual(OpCodeFactory.get(with: "OP_0").value, 0)
+        XCTAssertEqual(OpCodeFactory.get(with: "OP_16").value, 96)
+        XCTAssertEqual(OpCodeFactory.get(with: "OP_NOP").value, 97)
+
+        XCTAssertEqual(OpCode.OP_0.value, 0)
+        XCTAssertEqual(OpCode.OP_16.value, 96)
+        XCTAssertEqual(OpCode.OP_NOP.value, 97)
+    }
+
+    func testFromNumberConversions() {
+        XCTAssertEqual(OpCodeFactory.opcode(for: 0).value, 0)
+        XCTAssertEqual(OpCodeFactory.opcode(for: 16).value, 96)
+    }
+
+    func testNumberOfOpCodes() {
+        // TODO: Find the missing opcodes
+        XCTAssertEqual(OpCode.list.count, 124)
+    }
     
     func testOp1Negate() {
         let opcode = OpCode.OP_1NEGATE
@@ -44,28 +64,27 @@ class OpCodeTests: XCTestCase {
             fail(with: opcode, error: error)
         }
     }
-    
-     // OP_N is not working correctly right now because we didn't implemente bignum
-     // After implementing bignum, testOpN() should be enabled
      
     func testOpN() {
-        let vectors: [(OpCodeProtocol, Int32)] = [(OpCode.OP_1NEGATE, -1),
-                                               (OpCode.OP_1,1),
-                                               (OpCode.OP_2,2),
-                                               (OpCode.OP_3,3),
-                                               (OpCode.OP_4,4),
-                                               (OpCode.OP_5,5),
-                                               (OpCode.OP_6,6),
-                                               (OpCode.OP_7,7),
-                                               (OpCode.OP_8,8),
-                                               (OpCode.OP_9,9),
-                                               (OpCode.OP_10,10),
-                                               (OpCode.OP_11,11),
-                                               (OpCode.OP_12,12),
-                                               (OpCode.OP_13,13),
-                                               (OpCode.OP_14,14),
-                                               (OpCode.OP_15,15),
-                                               (OpCode.OP_16,16)]
+        let vectors: [(OpCodeProtocol, Int32)] = [
+            (OpCode.OP_1NEGATE, -1),
+            (OpCode.OP_1, 1),
+            (OpCode.OP_2, 2),
+            (OpCode.OP_3, 3),
+            (OpCode.OP_4, 4),
+            (OpCode.OP_5, 5),
+            (OpCode.OP_6, 6),
+            (OpCode.OP_7, 7),
+            (OpCode.OP_8, 8),
+            (OpCode.OP_9, 9),
+            (OpCode.OP_10, 10),
+            (OpCode.OP_11, 11),
+            (OpCode.OP_12, 12),
+            (OpCode.OP_13, 13),
+            (OpCode.OP_14, 14),
+            (OpCode.OP_15, 15),
+            (OpCode.OP_16, 16)
+        ]
 
         for (i, (opcode, expectedNumber)) in vectors.enumerated() {
             do {
@@ -248,7 +267,7 @@ class OpCodeTests: XCTestCase {
         } catch let error {
             fail(with: opcode, error: error)
         }
-        
+
         // OP_SIZE succeeds with empty array
         do {
             context.resetStack()
