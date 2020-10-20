@@ -31,6 +31,18 @@ public struct OpCodeFactory {
 
     /**
      Returns the OpCode which a given UInt8 value.
+     Returns nil for outranged value.
+
+     - parameter value: UInt8 value corresponding to the OpCode
+
+     - returns: The OpCode corresponding to value
+    */
+    public static func get(with value: UInt8) -> OpCode? {
+        return OpCode.list.first { $0.value == value }
+    }
+
+    /**
+     Returns the OpCode which a given UInt8 value.
      Returns OP_INVALIDOPCODE for outranged value.
      
      - parameter value: UInt8 value corresponding to the OpCode
@@ -42,6 +54,18 @@ public struct OpCodeFactory {
             return .OP_INVALIDOPCODE
         }
         return item
+    }
+
+    /**
+     Returns the OpCode which a given name.
+     Returns nil for unknown names.
+
+     - parameter name: String corresponding to the OpCode
+
+     - returns: The OpCode corresponding to name
+     */
+    public static func get(with name: String) -> OpCode? {
+        OpCode.list.first { $0.name == name }
     }
 
     /**
