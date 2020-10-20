@@ -40,13 +40,13 @@ public struct ScriptFactory {
 public extension ScriptFactory.Standard {
     static func buildP2PK(publickey: PublicKey) -> Script? {
         return try? Script()
-            .appendData(publickey.data)
+            .appendData(publickey.toDer())
             .append(.OP_CHECKSIG)
     }
 
-    static func buildP2PKH(address: Address) -> Script? {
-        return Script(address: address)
-    }
+//    static func buildP2PKH(address: Address) -> Script? {
+//        return Script(address: address)
+//    }
 
     static func buildP2SH(script: Script) -> Script {
         return script.toP2SH()
@@ -77,20 +77,20 @@ public extension ScriptFactory.LockTime {
     }
 
     // P2PKH + LockTime
-    static func build(address: Address, lockIntervalSinceNow: TimeInterval) -> Script? {
-        guard let p2pkh = Script(address: address) else {
-            return nil
-        }
-        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
-        return build(script: p2pkh, lockDate: lockDate)
-    }
-
-    static func build(address: Address, lockDate: Date) -> Script? {
-        guard let p2pkh = Script(address: address) else {
-            return nil
-        }
-        return build(script: p2pkh, lockDate: lockDate)
-    }
+//    static func build(address: Address, lockIntervalSinceNow: TimeInterval) -> Script? {
+//        guard let p2pkh = Script(address: address) else {
+//            return nil
+//        }
+//        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
+//        return build(script: p2pkh, lockDate: lockDate)
+//    }
+//
+//    static func build(address: Address, lockDate: Date) -> Script? {
+//        guard let p2pkh = Script(address: address) else {
+//            return nil
+//        }
+//        return build(script: p2pkh, lockDate: lockDate)
+//    }
 }
 
 // MARK: - OpReturn
@@ -160,47 +160,47 @@ public extension ScriptFactory.Condition {
 */
 public extension ScriptFactory.HashedTimeLockedContract {
     // Base
-    static func build(recipient: Address, sender: Address, lockDate: Date, hash: Data, hashOp: HashOperator) -> Script? {
-        guard hash.count == hashOp.hashSize else {
-            return nil
-        }
-
-        return try? Script()
-            .append(.OP_IF)
-                .append(hashOp.opcode)
-                .appendData(hash)
-                .append(.OP_EQUALVERIFY)
-                .append(.OP_DUP)
-                .append(.OP_HASH160)
-                .appendData(recipient.data)
-            .append(.OP_ELSE)
-                .appendData(lockDate.bigNumData)
-                .append(.OP_CHECKLOCKTIMEVERIFY)
-                .append(.OP_DROP)
-                .append(.OP_DUP)
-                .append(.OP_HASH160)
-                .appendData(sender.data)
-            .append(.OP_ENDIF)
-            .append(.OP_EQUALVERIFY)
-            .append(.OP_CHECKSIG)
-    }
+//    static func build(recipient: Address, sender: Address, lockDate: Date, hash: Data, hashOp: HashOperator) -> Script? {
+//        guard hash.count == hashOp.hashSize else {
+//            return nil
+//        }
+//
+//        return try? Script()
+//            .append(.OP_IF)
+//                .append(hashOp.opcode)
+//                .appendData(hash)
+//                .append(.OP_EQUALVERIFY)
+//                .append(.OP_DUP)
+//                .append(.OP_HASH160)
+//                .appendData(recipient.data)
+//            .append(.OP_ELSE)
+//                .appendData(lockDate.bigNumData)
+//                .append(.OP_CHECKLOCKTIMEVERIFY)
+//                .append(.OP_DROP)
+//                .append(.OP_DUP)
+//                .append(.OP_HASH160)
+//                .appendData(sender.data)
+//            .append(.OP_ENDIF)
+//            .append(.OP_EQUALVERIFY)
+//            .append(.OP_CHECKSIG)
+//    }
 
     // convenience
-    static func build(recipient: Address, sender: Address, lockIntervalSinceNow: TimeInterval, hash: Data, hashOp: HashOperator) -> Script? {
-        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
-        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
-    }
-
-    static func build(recipient: Address, sender: Address, lockIntervalSinceNow: TimeInterval, secret: Data, hashOp: HashOperator) -> Script? {
-        let hash = hashOp.hash(secret)
-        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
-        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
-    }
-
-    static func build(recipient: Address, sender: Address, lockDate: Date, secret: Data, hashOp: HashOperator) -> Script? {
-        let hash = hashOp.hash(secret)
-        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
-    }
+//    static func build(recipient: Address, sender: Address, lockIntervalSinceNow: TimeInterval, hash: Data, hashOp: HashOperator) -> Script? {
+//        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
+//        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
+//    }
+//
+//    static func build(recipient: Address, sender: Address, lockIntervalSinceNow: TimeInterval, secret: Data, hashOp: HashOperator) -> Script? {
+//        let hash = hashOp.hash(secret)
+//        let lockDate = Date(timeIntervalSinceNow: lockIntervalSinceNow)
+//        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
+//    }
+//
+//    static func build(recipient: Address, sender: Address, lockDate: Date, secret: Data, hashOp: HashOperator) -> Script? {
+//        let hash = hashOp.hash(secret)
+//        return build(recipient: recipient, sender: sender, lockDate: lockDate, hash: hash, hashOp: hashOp)
+//    }
 
 }
 
@@ -236,7 +236,8 @@ final public class HashOperatorHash160: HashOperator {
 private extension Date {
     var bigNumData: Data {
         let dateUnix: TimeInterval = timeIntervalSince1970
-        let bn = BigNumber(Int32(dateUnix).littleEndian)
+        let bn = BInt(Int32(dateUnix).littleEndian)
+//        let bn = BigNumber(Int32(dateUnix).littleEndian)
         return bn.data
     }
 }

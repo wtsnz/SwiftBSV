@@ -88,7 +88,8 @@ public class ScriptExecutionContext {
         stack.append(bool ? blobTrue : blobFalse)
     }
     public func pushToStack(_ n: Int32) throws {
-        stack.append(BigNumber(n.littleEndian).data)
+        stack.append(BInt(n.littleEndian).data)
+//        stack.append(BigNumber(n.littleEndian).data)
     }
     public func pushToStack(_ data: Data) throws {
         guard data.count <= BTC_MAX_SCRIPT_ELEMENT_SIZE else {
@@ -155,7 +156,8 @@ public class ScriptExecutionContext {
             throw OpCodeExecutionError.invalidBignum
         }
 
-        return BigNumber(data).int32
+        return Int32(BInt(data: data).asInt()!)
+//        return BigNumber(data).int32
     }
 
     public func bool(at i: Int) -> Bool {
