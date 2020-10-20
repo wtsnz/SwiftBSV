@@ -52,6 +52,10 @@ public struct Bip32 {
     let privateKey: PrivateKey?
     let publicKey: PublicKey
 
+    public var address: Address {
+        return Address(publicKey, network: network)
+    }
+
     /// Create a Bip32 HD Key from an existing Seed
     public init(seed: Data, network: Network = .mainnet) {
         let output = Crypto.hmacsha512(key: "Bitcoin seed".data(using: .ascii)!, data: seed)
@@ -140,7 +144,7 @@ public struct Bip32 {
     }
 
     /// Converts this Bip32 PrivateKey into the Bip32 PublicKey version
-    func toPublic() -> Bip32 {
+    public func toPublic() -> Bip32 {
         if versionPrefix == network.bip32.pubKey {
             return self
         }

@@ -30,6 +30,10 @@ public struct PrivateKey {
         return PublicKey(fromDer: publicKeyData)!
     }
 
+    var address: Address {
+        return Address(self, network: network)
+    }
+
     public init(network: Network = .mainnet) {
         var buffer: Data
         var number: BInt

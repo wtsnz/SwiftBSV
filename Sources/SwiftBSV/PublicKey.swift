@@ -15,6 +15,10 @@ public struct PublicKey {
 
     public var isCompressed: Bool
 
+    var address: Address {
+        return Address(self)
+    }
+
     /// Create a PublicKey from a DER hex string.
     public init?(hex: String) {
         self.init(fromDer: Data(hex: hex))

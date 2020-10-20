@@ -12,6 +12,7 @@ class MnemonicsViewModel: ObservableObject {
 
     @Published var mnemonicString: String = ""
     @Published var xprivKey: String = ""
+    @Published var xpubKey: String = ""
     @Published var address: String = ""
 
     @Published var transactionASM: String = ""
@@ -41,6 +42,7 @@ class MnemonicsViewModel: ObservableObject {
         let key = Bip32(seed: seed)
 
         xprivKey = key.toString()
+        xpubKey = key.toPublic().toString()
 
 //        let privateKey = PrivateKey(seed: seed)
 
@@ -93,8 +95,13 @@ struct Mnemonics: View {
 
                 })
 
-                TextField("Address", text: Binding<String>(
+                TextField("xpriv", text: Binding<String>(
                     get: { self.viewModel.xprivKey },
+                    set: { new in return }
+                ))
+
+                TextField("xpub", text: Binding<String>(
+                    get: { self.viewModel.xpubKey },
                     set: { new in return }
                 ))
 

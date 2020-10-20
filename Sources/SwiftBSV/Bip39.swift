@@ -28,7 +28,7 @@ public final class Bip39 {
         case high = 256
     }
     
-    public static func create(strength: Strength = .normal, language: WordList = .english) -> String {
+    public static func create(strength: Strength = .high, language: WordList = .english) -> String {
         let byteCount = strength.rawValue / 8
         let bytes = Data.randomBytes(length: byteCount)
         return create(entropy: bytes, language: language)
