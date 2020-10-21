@@ -80,6 +80,9 @@ class ByteStream {
     }
 
     func read(_ type: Data.Type, count: Int) -> Data {
+        guard availableBytes >= count else {
+            return Data()
+        }
         let value = data[offset..<(offset + count)]
         offset += count
         return Data(value)
