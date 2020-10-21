@@ -58,9 +58,9 @@ class ScriptMachineTests: XCTestCase {
     func testChunksFromBitcoindString() {
 
         let bitcoindString = "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
-        let buffer = ChunkHelpers.bufferFromBitcoindString(bitcoindString)
+        let buffer = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
         let chunks = ChunkHelpers.chunksFromBuffer(buffer)
-        let calculatedBitcoindString = ChunkHelpers.chunksToBitcoindString(chunks)
+        let calculatedBitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
 
         let te2 = "0x4b417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a EQUAL"
 
@@ -105,11 +105,14 @@ class ScriptMachineTests: XCTestCase {
 
         let resourcesURL = testsDirectory.appendingPathComponent("Resources")
 
-        let scriptJson = resourcesURL.appendingPathComponent("script_tests.json")
+        let validScriptJsonUrl = resourcesURL
+            .appendingPathComponent("vectors")
+            .appendingPathComponent("bitcoind")
+            .appendingPathComponent("script_valid.json")
 
 
         let json = try! JSONSerialization.jsonObject(
-            with: try! Data(contentsOf: scriptJson),
+            with: try! Data(contentsOf: validScriptJsonUrl),
             options: []
         )
 
@@ -122,21 +125,42 @@ class ScriptMachineTests: XCTestCase {
                 return
             }
 
-            let scriptSig = row[0] as! NSString
-            let scriptPubKey = row[1] as! NSString
-            let flags = row[2] as! NSString
-            let expectedError = row[3] as! NSString
+            do {
+                let scriptSig = row[0] as! NSString
+
+    //            let scriptPubKey = row[1] as! NSString
+    //            let flags = row[2] as! NSString
+    //            let expectedError = row[3] as! NSString
 
 
-//            let lockScript = Script(
-//
-////            let interp = ScriptMachine.verify(
-////                lockScript: <#T##Script#>,
-////                unlockScript: <#T##Script#>,
-////                context: <#T##ScriptExecutionContext#>
-////            )
+                print(scriptSig)
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig as String)
+                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+                let string = ChunkHelpers.chunksToString(chunks)
+                let chunks2 = ChunkHelpers.chunksFromString(string)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks2)
 
-            print(scriptSig)
+                XCTAssertEqual(bitcoindString, scriptSig as String)
+            }
+
+            do {
+                let scriptSig = row[1] as! NSString
+
+    //            let scriptPubKey = row[1] as! NSString
+    //            let flags = row[2] as! NSString
+    //            let expectedError = row[3] as! NSString
+
+
+                print(scriptSig)
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig as String)
+                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+                let string = ChunkHelpers.chunksToString(chunks)
+                let chunks2 = ChunkHelpers.chunksFromString(string)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+
+                XCTAssertEqual(bitcoindString, scriptSig as String)
+
+            }
 
         }
 
