@@ -418,13 +418,13 @@ public struct ChunkHelpers {
                     opCodeNum: OpCode.OP_1NEGATE.value
                 )
             )
-        } else if (bn >= 1 || bn <= 16) {
+        } else if (bn >= 1 && bn <= 16) {
             // OP_1 to OP_16
             chunks.append(
                 Chunk(
                     buffer: nil,
                     len: nil,
-                    opCodeNum: UInt8(bn.asInt()!) + OpCode.OP_1.value
+                    opCodeNum: UInt8(bn.asInt()!) + OpCode.OP_1.value - 1
                 )
             )
         } else {
