@@ -172,7 +172,7 @@ public struct ChunkHelpers {
             } else if let number = UInt8(token), let opCode = OpCodeFactory.get(with: number) {
                 data += opCode.value
             } else if let bignum = Int(token, radix: 10) {
-                let bn = BInt(token)!
+                let bn = BInt(bignum)
                 let chunks = chunksForBigInt(bn)
                 let d = chunksToBuffer(chunks)
                 data += d
@@ -186,7 +186,7 @@ public struct ChunkHelpers {
     public static func bitcoindStringFromChunks(_ chunks: [Chunk]) -> String {
         var string = ""
         for chunk in chunks {
-            if let _ = chunk.buffer {
+            if let buffer = chunk.buffer {
                 let encoded = chunksToBuffer([chunk])
                 string = string + " " + "0x" + encoded.hex
             } else if let opCode = OpCodeFactory.get(with: chunk.opCodeNum) {
@@ -213,10 +213,8 @@ public struct ChunkHelpers {
             let opCodeNum: UInt8? = OpCodeFactory.get(with: token)?.value
 
             if opCodeNum == nil {
-
-                let number = (UInt8(token, radix: 10) ?? 0)
-
-                if number > 0 && number < OpCode.OP_PUSHDATA1.value {
+                if let number = UInt8(token, radix: 10) {
+                    if number > 0 && number < OpCode.OP_PUSHDATA1.value {
                         let string = String(String(tokens[i + 1]).dropFirst(2))
                         let data = Data(hex: string)
 
@@ -241,7 +239,9 @@ public struct ChunkHelpers {
                         fatalError("invalid")
                     }
 
-
+                } else {
+                    fatalError("invalid")
+                }
             }
             else if (opCodeNum == OpCode.OP_PUSHDATA1.value || opCodeNum == OpCode.OP_PUSHDATA2.value || opCodeNum == OpCode.OP_PUSHDATA4.value) {
 
@@ -303,6 +303,7 @@ public struct ChunkHelpers {
                 )
             } else if opCodeNum == OpCode.OP_PUSHDATA1.value {
                 len = Int(br.read(UInt8.self))
+
                 buf = br.read(Data.self, count: len)
                 chunks.append(
                     Chunk(
