@@ -97,7 +97,23 @@ class ScriptMachineTests: XCTestCase {
         XCTAssertEqual(script?.chunk(at: 0).opcodeValue, Op0().value)
     }
 
-    func testssss() {
+    func testsssddds() {
+        let scriptSig = "0x4c01"
+//        let scriptSig = "0x21 0x03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640 CHECKSIG"
+
+        let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig)
+        let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+        let _ = ChunkHelpers.chunksToString(chunks)
+        let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
+
+        let buffer2 = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
+        let chunks2 = ChunkHelpers.chunksFromBuffer(buffer2)
+        let bitcoindString2 = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+
+        XCTAssertEqual(bitcoindString, bitcoindString2)
+    }
+
+    func testReadsScriptValidVectors() {
         let thisSourceFile = URL(fileURLWithPath: #file)
         let testsDirectory = thisSourceFile
             .deletingLastPathComponent()
@@ -126,40 +142,109 @@ class ScriptMachineTests: XCTestCase {
             }
 
             do {
-                let scriptSig = row[0] as! NSString
-
+                let scriptSig = row[0] as! NSString as String
     //            let scriptPubKey = row[1] as! NSString
     //            let flags = row[2] as! NSString
     //            let expectedError = row[3] as! NSString
 
 
                 print(scriptSig)
-                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig as String)
-                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
-                let string = ChunkHelpers.chunksToString(chunks)
-                let chunks2 = ChunkHelpers.chunksFromString(string)
-                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks2)
 
-                XCTAssertEqual(bitcoindString, scriptSig as String)
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig)
+                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+                let _ = ChunkHelpers.chunksToString(chunks)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
+
+                let buffer2 = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
+                let chunks2 = ChunkHelpers.chunksFromBuffer(buffer2)
+                let bitcoindString2 = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+
+                XCTAssertEqual(bitcoindString, bitcoindString2)
             }
 
             do {
-                let scriptSig = row[1] as! NSString
+                let scriptSig = row[1] as! NSString as String
 
+                print(scriptSig)
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig)
+                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+                let _ = ChunkHelpers.chunksToString(chunks)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
+
+                let buffer2 = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
+                let chunks2 = ChunkHelpers.chunksFromBuffer(buffer2)
+                let bitcoindString2 = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+
+                XCTAssertEqual(bitcoindString, bitcoindString2)
+            }
+
+        }
+
+    }
+
+    func testReadsScriptInvalidVectors() {
+        let thisSourceFile = URL(fileURLWithPath: #file)
+        let testsDirectory = thisSourceFile
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        let resourcesURL = testsDirectory.appendingPathComponent("Resources")
+
+        let validScriptJsonUrl = resourcesURL
+            .appendingPathComponent("vectors")
+            .appendingPathComponent("bitcoind")
+            .appendingPathComponent("script_invalid.json")
+
+
+        let json = try! JSONSerialization.jsonObject(
+            with: try! Data(contentsOf: validScriptJsonUrl),
+            options: []
+        )
+
+        let array = json as! NSArray
+
+        array.forEach { (contents) in
+            let row = contents as! NSArray
+
+            if row.count == 1 {
+                return
+            }
+
+            do {
+                let scriptSig = row[0] as! NSString as String
     //            let scriptPubKey = row[1] as! NSString
     //            let flags = row[2] as! NSString
     //            let expectedError = row[3] as! NSString
 
 
                 print(scriptSig)
-                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig as String)
+
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig)
                 let chunks = ChunkHelpers.chunksFromBuffer(buffer)
-                let string = ChunkHelpers.chunksToString(chunks)
-                let chunks2 = ChunkHelpers.chunksFromString(string)
-                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+                let _ = ChunkHelpers.chunksToString(chunks)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
 
-                XCTAssertEqual(bitcoindString, scriptSig as String)
+                let buffer2 = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
+                let chunks2 = ChunkHelpers.chunksFromBuffer(buffer2)
+                let bitcoindString2 = ChunkHelpers.bitcoindStringFromChunks(chunks2)
 
+                XCTAssertEqual(bitcoindString, bitcoindString2)
+            }
+
+            do {
+                let scriptSig = row[1] as! NSString as String
+
+                print(scriptSig)
+                let buffer = ChunkHelpers.bitcoindStringToBuffer(scriptSig)
+                let chunks = ChunkHelpers.chunksFromBuffer(buffer)
+                let _ = ChunkHelpers.chunksToString(chunks)
+                let bitcoindString = ChunkHelpers.bitcoindStringFromChunks(chunks)
+
+                let buffer2 = ChunkHelpers.bitcoindStringToBuffer(bitcoindString)
+                let chunks2 = ChunkHelpers.chunksFromBuffer(buffer2)
+                let bitcoindString2 = ChunkHelpers.bitcoindStringFromChunks(chunks2)
+
+                XCTAssertEqual(bitcoindString, bitcoindString2)
             }
 
         }
