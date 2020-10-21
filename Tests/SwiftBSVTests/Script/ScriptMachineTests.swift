@@ -114,23 +114,11 @@ class ScriptMachineTests: XCTestCase {
     }
 
     func testReadsScriptValidVectors() {
-        let thisSourceFile = URL(fileURLWithPath: #file)
-        let testsDirectory = thisSourceFile
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-
-        let resourcesURL = testsDirectory.appendingPathComponent("Resources")
-
-        let validScriptJsonUrl = resourcesURL
-            .appendingPathComponent("vectors")
-            .appendingPathComponent("bitcoind")
-            .appendingPathComponent("script_valid.json")
-
-
-        let json = try! JSONSerialization.jsonObject(
-            with: try! Data(contentsOf: validScriptJsonUrl),
-            options: []
-        )
+        let json = TestHelpers.jsonResource(pathComponents: [
+            "vectors",
+            "bitcoind",
+            "script_valid.json"
+        ])
 
         let array = json as! NSArray
 
@@ -183,23 +171,12 @@ class ScriptMachineTests: XCTestCase {
     }
 
     func testReadsScriptInvalidVectors() {
-        let thisSourceFile = URL(fileURLWithPath: #file)
-        let testsDirectory = thisSourceFile
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
 
-        let resourcesURL = testsDirectory.appendingPathComponent("Resources")
-
-        let validScriptJsonUrl = resourcesURL
-            .appendingPathComponent("vectors")
-            .appendingPathComponent("bitcoind")
-            .appendingPathComponent("script_invalid.json")
-
-
-        let json = try! JSONSerialization.jsonObject(
-            with: try! Data(contentsOf: validScriptJsonUrl),
-            options: []
-        )
+        let json = TestHelpers.jsonResource(pathComponents: [
+            "vectors",
+            "bitcoind",
+            "script_invalid.json"
+        ])
 
         let array = json as! NSArray
 

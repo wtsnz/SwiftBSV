@@ -44,6 +44,68 @@ class Bip39Tests: XCTestCase {
 //        XCTAssertEqual(derrived.publicKey.address, "17rxURoF96VhmkcEGCj5LNQkmN9HVhWb7F")
     }
 
+    func testVectors() {
+
+        let json = TestHelpers.jsonResource(pathComponents: [
+            "vectors",
+            "bip39.json"
+        ])
+
+        let dict = json as! NSDictionary
+
+        let englishVectors = dict.object(forKey: "english") as! NSArray
+
+        for vector in englishVectors {
+
+            let dict = vector as! NSDictionary
+            let entropy = dict["entropy"] as! String
+            let mnemonic = dict["mnemonic"] as! String
+            let passphrase = dict["passphrase"] as! String
+            let seed = dict["seed"] as! String
+            let bip32_xprv = dict["bip32_xprv"] as! String
+
+            do {
+                let _entropy = Data(hex: entropy)
+                let _mnemonic = Bip39.create(entropy: _entropy)
+                XCTAssertEqual(mnemonic, _mnemonic)
+
+                let _seed = Bip39.createSeed(mnemonic: _mnemonic, withPassphrase: passphrase)
+                XCTAssertEqual(seed, _seed.hex)
+
+                let _xpriv = Bip32(seed: _seed).toString()
+                XCTAssertEqual(bip32_xprv, _xpriv)
+            }
+
+        }
+
+        let japaneseVectors = dict.object(forKey: "japanese") as! NSArray
+
+        for vector in japaneseVectors {
+
+            let dict = vector as! NSDictionary
+            let entropy = dict["entropy"] as! String
+            let mnemonic = dict["mnemonic"] as! String
+            let passphrase = dict["passphrase"] as! String
+            let seed = dict["seed"] as! String
+            let bip32_xprv = dict["bip32_xprv"] as! String
+
+            do {
+                let _entropy = Data(hex: entropy)
+                let _mnemonic = Bip39.create(entropy: _entropy, language: .japanese)
+                    .replacingOccurrences(of: " ", with: "　") // Our Bip39 doesn't use "　" as a space in japanese
+                XCTAssertEqual(mnemonic, _mnemonic)
+
+                let _seed = Bip39.createSeed(mnemonic: _mnemonic, withPassphrase: passphrase)
+                XCTAssertEqual(seed, _seed.hex)
+
+                let _xpriv = Bip32(seed: _seed).toString()
+                XCTAssertEqual(bip32_xprv, _xpriv)
+            }
+
+        }
+
+    }
+
     func testMenmonic() {
         let entropy = Data(hex: "000102030405060708090a0b0c0d0e0f")
         let mnemonic = Bip39.create(entropy: entropy)
