@@ -112,13 +112,10 @@ public struct ScriptChunkHelper {
             guard offset + opCodeSize + dataLengthSize <= count else {
                 throw ScriptChunkError.error("Parse DataChunk failed. OP_PUSHDATA4 error")
             }
-            dataSize = scriptData.withUnsafeBytes {
-                Int(
-                    CFSwapInt32LittleToHost(
-                        $0.load(fromByteOffset: offset + opCodeSize, as: UInt32.self)
-                    )
-                )
-            }
+
+
+            dataSize = Int(scriptData[offset+opCodeSize..<offset+opCodeSize+dataLengthSize].to(type: UInt32.self))
+
         default:
             // cannot happen because it's opcode
             throw ScriptChunkError.error("Parse DataChunk failed. OP_CODE: \(opcode).")
