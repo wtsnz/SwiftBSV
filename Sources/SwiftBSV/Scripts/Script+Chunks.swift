@@ -172,7 +172,7 @@ public struct ChunkHelpers {
             } else if let number = UInt8(token), let opCode = OpCodeFactory.get(with: number) {
                 data += opCode.value
             } else if let bignum = Int(token, radix: 10) {
-                let bn = BInt(bignum)
+                let bn = BInt(token)!
                 let chunks = chunksForBigInt(bn)
                 let d = chunksToBuffer(chunks)
                 data += d
@@ -210,13 +210,13 @@ public struct ChunkHelpers {
         while (i < tokens.count) {
             let token = String(tokens[i])
 
-            let opCodeNum: UInt8? = OpCodeFactory.get(with: String(token))?.value
+            let opCodeNum: UInt8? = OpCodeFactory.get(with: token)?.value
 
             if opCodeNum == nil {
 
-                if let number = UInt8(token) {
+                let number = (UInt8(token, radix: 10) ?? 0)
 
-                    if number > 0 && number < OpCode.OP_PUSHDATA1.value {
+                if number > 0 && number < OpCode.OP_PUSHDATA1.value {
                         let string = String(String(tokens[i + 1]).dropFirst(2))
                         let data = Data(hex: string)
 
@@ -241,9 +241,7 @@ public struct ChunkHelpers {
                         fatalError("invalid")
                     }
 
-                } else {
-                    fatalError("invalid")
-                }
+
             }
             else if (opCodeNum == OpCode.OP_PUSHDATA1.value || opCodeNum == OpCode.OP_PUSHDATA2.value || opCodeNum == OpCode.OP_PUSHDATA4.value) {
 
