@@ -75,8 +75,36 @@ extension UInt32 {
 }
 
 extension SighashType {
+    public typealias BSV = BSVSighashType
     public typealias BCH = BCHSighashType
     public typealias BTC = BTCSighashType
+}
+
+// MARK: BSV SighashType
+public enum BSVSighashType: SighashType {
+    case ALL, NONE, SINGLE, ALL_ANYONECANPAY, NONE_ANYONECANPAY, SINGLE_ANYONECANPAY
+    public init?(rawValue: UInt8) {
+        switch rawValue {
+        case BSVSighashType.ALL.rawValue: self = .ALL
+        case BSVSighashType.NONE.rawValue: self = .NONE
+        case BSVSighashType.SINGLE.rawValue: self = .SINGLE
+        case BSVSighashType.ALL_ANYONECANPAY.rawValue: self = .ALL_ANYONECANPAY
+        case BSVSighashType.NONE_ANYONECANPAY.rawValue: self = .NONE_ANYONECANPAY
+        case BSVSighashType.SINGLE_ANYONECANPAY.rawValue: self = .SINGLE_ANYONECANPAY
+        default: return nil
+        }
+    }
+
+    public var rawValue: UInt8 {
+        switch self {
+        case .ALL: return SIGHASH_FORK_ID + SIGHASH_ALL // 01000001
+        case .NONE: return SIGHASH_FORK_ID + SIGHASH_NONE // 01000010
+        case .SINGLE: return SIGHASH_FORK_ID + SIGHASH_SINGLE // 01000011
+        case .ALL_ANYONECANPAY: return SIGHASH_FORK_ID + SIGHASH_ALL + SIGHASH_ANYONECANPAY // 11000001
+        case .NONE_ANYONECANPAY: return SIGHASH_FORK_ID + SIGHASH_NONE + SIGHASH_ANYONECANPAY // 11000010
+        case .SINGLE_ANYONECANPAY: return SIGHASH_FORK_ID + SIGHASH_SINGLE + SIGHASH_ANYONECANPAY // 11000011
+        }
+    }
 }
 
 // MARK: BCH SighashType

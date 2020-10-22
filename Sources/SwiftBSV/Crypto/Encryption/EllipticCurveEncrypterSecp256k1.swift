@@ -34,13 +34,13 @@ import Foundation
 //        return publickKey
 //    }
 //    
-//    /// Signs the hash with the private key. Produces signature data structure that can be exported with
-//    /// export(signature:) method.
-//    ///
-//    /// - Parameters:
-//    ///   - hash: 32-byte (256-bit) hash of the message
-//    ///   - privateKey: 32-byte private key
-//    /// - Returns: signature data structure if signing succeeded, otherwise nil.
+    /// Signs the hash with the private key. Produces signature data structure that can be exported with
+    /// export(signature:) method.
+    ///
+    /// - Parameters:
+    ///   - hash: 32-byte (256-bit) hash of the message
+    ///   - privateKey: 32-byte private key
+    /// - Returns: signature data structure if signing succeeded, otherwise nil.
 //    public func sign(hash: Data, privateKey: Data) -> secp256k1_ecdsa_recoverable_signature? {
 //        precondition(hash.count == 32, "Hash must be 32 bytes size")
 //        var signature = secp256k1_ecdsa_recoverable_signature()
@@ -53,11 +53,11 @@ import Foundation
 //        }
 //        return signature
 //    }
-//    
-//    /// Converts signature data structure to 65 bytes.
-//    ///
-//    /// - Parameter signature: signature data structure
-//    /// - Returns: 65 byte exported signature data.
+
+    /// Converts signature data structure to 65 bytes.
+    ///
+    /// - Parameter signature: signature data structure
+    /// - Returns: 65 byte exported signature data.
 //    public func export(signature: inout secp256k1_ecdsa_recoverable_signature) -> Data {
 //        var output = Data(count: 65)
 //        var recId = 0 as Int32
@@ -65,7 +65,7 @@ import Foundation
 //            guard let p = output.bindMemory(to: UInt8.self).baseAddress else { return }
 //            secp256k1_ecdsa_recoverable_signature_serialize_compact(context, p, &recId, &signature)
 //        }
-//        
+//
 //        output[64] = UInt8(recId)
 //        return output
 //    }

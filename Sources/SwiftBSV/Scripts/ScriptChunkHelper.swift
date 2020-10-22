@@ -113,7 +113,6 @@ public struct ScriptChunkHelper {
                 throw ScriptChunkError.error("Parse DataChunk failed. OP_PUSHDATA4 error")
             }
 
-
             dataSize = Int(scriptData[offset+opCodeSize..<offset+opCodeSize+dataLengthSize].to(type: UInt32.self))
 
         default:

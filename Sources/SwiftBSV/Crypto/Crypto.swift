@@ -63,13 +63,14 @@ public final class Crypto {
 //        return Data(CryptoSwift.SHA3(variant: .sha256).calculate(for: data.bytes))
 //    }
 //
-//    public static func sign(_ hash: Data, privateKey: Data) throws -> Data {
+    public static func sign(_ hash: Data, privateKey: Data) throws -> Data {
+        try ECDSA.sign(hash, privateKey: privateKey)
 //        let encrypter = EllipticCurveEncrypterSecp256k1()
 //        guard var signatureInInternalFormat = encrypter.sign(hash: hash, privateKey: privateKey) else {
 //            throw HDWalletKitError.failedToSign
 //        }
 //        return encrypter.export(signature: &signatureInInternalFormat)
-//    }
+    }
 
     public static func verifySigData(for tx: Transaction, inputIndex: Int, utxo: TransactionOutput, sigData: Data, pubKeyData: Data) throws -> Bool {
         // Hash type is one byte tacked on to the end of the signature. So the signature shouldn't be empty.
