@@ -55,21 +55,37 @@ public final class Crypto {
 //        return Data(output)
 //    }
 
-//    public static func sha3keccak256(data:Data) -> Data {
-//        return Data(SHA3(variant: .keccak256).calculate(for: data.bytes))
-//    }
+    public static func sha3keccak256(data:Data) -> Data {
+        return Data(SHA3(variant: .keccak256).calculate(for: data.bytes))
+    }
 //
 //    public static func hashSHA3_256(_ data: Data) -> Data {
 //        return Data(CryptoSwift.SHA3(variant: .sha256).calculate(for: data.bytes))
 //    }
-//
-    public static func sign(_ hash: Data, privateKey: Data) throws -> Data {
-        try ECDSA.sign(hash, privateKey: privateKey)
-//        let encrypter = EllipticCurveEncrypterSecp256k1()
-//        guard var signatureInInternalFormat = encrypter.sign(hash: hash, privateKey: privateKey) else {
-//            throw HDWalletKitError.failedToSign
-//        }
-//        return encrypter.export(signature: &signatureInInternalFormat)
+
+    public static func sign(_ message: Data, privateKey: PrivateKey) -> Data {
+
+        let sig_ = try! Secp256k1.sign(msg: message.bytes, with: privateKey.data.bytes, nonceFunction: Secp256k1.NonceFunction.rfc6979)
+        let sig = Data(sig_)
+
+
+        let a = try! ECDSA.signMessage(message, withPrivateKey: privateKey.data)
+        let b =  ECDSA.sign(message, privateKey: privateKey.data)
+
+        precondition(a == sig)
+
+        return sig
+    }
+
+    public static func verifySignature(_ signature: Data, message: Data, publicKey: PublicKey) -> Bool {
+        let publicKey = publicKey.toDer()
+
+        return try! ECDSA.verifySignature(signature, message: message, publicKeyData: publicKey)
+    }
+
+    public static func verifySignatureCompact(_ signature: Data, message: Data, publicKeyData: Data) -> Bool {
+
+        return try! ECDSA.verifySignatureCompact(signature, message: message, publicKeyData: publicKeyData)
     }
 
     public static func verifySigData(for tx: Transaction, inputIndex: Int, utxo: TransactionOutput, sigData: Data, pubKeyData: Data) throws -> Bool {

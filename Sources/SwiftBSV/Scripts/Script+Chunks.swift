@@ -64,8 +64,12 @@ public struct ChunkHelpers {
                 )
                 i = i + 1
             } else if opCode == nil {
-                let hex = tokens[i]
+                var hex = tokens[i]
                 let buf = Data(hex: hex)
+
+                if hex.hasPrefix("0x") {
+                    hex = String(hex.dropFirst(2))
+                }
 
                 if buf.hex != hex {
                     fatalError("Invalid hex string in script")

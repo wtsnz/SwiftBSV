@@ -17,10 +17,6 @@ public enum Network {
     /// The BitcoinSV Test Network
     case testnet
 
-    public struct Bip32 {
-        var pubKey: UInt32
-        var privKey: UInt32
-    }
 
     public var bip32: Bip32 {
         switch self {
@@ -31,10 +27,6 @@ public enum Network {
         }
     }
 
-    public struct Address {
-        let publicKeyHash: UInt8
-    }
-
     public var address: Address {
         switch self {
         case .mainnet:
@@ -43,6 +35,31 @@ public enum Network {
             return Address(publicKeyHash: 0x6f)
         }
     }
+
+    public var txBuilder: TxBuilder {
+        return TxBuilder(dust: 546, feePerKb: 0.00000500e8)
+    }
+
+    public struct Bip32 {
+        var pubKey: UInt32
+        var privKey: UInt32
+    }
+    public struct Address {
+        let publicKeyHash: UInt8
+    }
+
+    public struct TxBuilder {
+        let dust: UInt64
+        let feePerKb: Float
+    }
+
+
+
+
+
+
+
+
 
     // P2PKH
     public var publicKeyHash: UInt8 {

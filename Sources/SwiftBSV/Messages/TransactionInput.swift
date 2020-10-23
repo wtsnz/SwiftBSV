@@ -65,3 +65,45 @@ public struct TransactionInput {
         return TransactionInput(previousOutput: previousOutput, signatureScript: signatureScript, sequence: sequence)
     }
 }
+
+// MARK: - TransactionInput+Script
+
+extension TransactionInput {
+
+    static func fromPubKeyHashOut(txHashBuf: Data, txOutNum: UInt32, txOut: TransactionOutput, pubKey: PublicKey) -> TransactionInput {
+        let script = Script()
+
+        if txOut.getScript().isPayToPublicKeyHashOutScript {
+            try! script.append(.OP_0)
+            try! script.appendData(pubKey.toDer()) // TODO: Should force the compressed key?
+        }
+
+        return TransactionInput(
+            previousOutput: TransactionOutPoint(
+                hash: txHashBuf,
+                index: txOutNum
+            ),
+            signatureScript: script.data,
+            sequence: 0xffffffff
+        )
+    }
+
+    func withFilledSig(nScriptChunk: Int, sig: Data) -> TransactionInput {
+
+        let script = Script(data: signatureScript)!
+
+        let signedScript = try! Script().appendData(sig)
+
+        var chunks = script.scriptChunks
+        chunks[nScriptChunk] = signedScript.chunk(at: 0)
+
+        let filledScript = Script(chunks: chunks)
+
+        return TransactionInput(
+            previousOutput: previousOutput,
+            signatureScript: filledScript.data,
+            sequence: sequence
+        )
+    }
+
+}

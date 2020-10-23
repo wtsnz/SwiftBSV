@@ -90,6 +90,16 @@ public struct PublicKey {
         }
     }
 
+    /// Encode the PublicKey into data, no wrapping
+    public func toBuffer() -> Data {
+        let xBuffer = point.x.data
+        let yBuffer = point.y.data
+        var data = Data()
+        data += xBuffer
+        data += yBuffer
+        return data
+    }
+
 }
 
 extension PublicKey: CustomStringConvertible {

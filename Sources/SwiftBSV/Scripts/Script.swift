@@ -179,7 +179,7 @@ public class Script {
     }
 
     public var isStandard: Bool {
-        return isPayToPublicKeyHashScript
+        return isPayToPublicKeyHashOutScript
             || isPayToScriptHashScript
             || isPublicKeyScript
             || isStandardMultisignatureScript
@@ -195,7 +195,15 @@ public class Script {
         return pushdata.count > 1 && opcode(at: 1) == OpCode.OP_CHECKSIG
     }
 
-    public var isPayToPublicKeyHashScript: Bool {
+    public var isPubKeyHashIn: Bool {
+        if chunks.count == 2 && (chunks[0].scriptData.count != 0 || chunks[0].opCode == OpCode.OP_0) &&
+            (chunks[1].scriptData.count != 0 || chunks[0].opCode == OpCode.OP_0) {
+            return true
+        }
+        return false
+    }
+
+    public var isPayToPublicKeyHashOutScript: Bool {
         guard chunks.count == 5 else {
             return false
         }
@@ -470,13 +478,19 @@ extension Script {
     // Standard Transaction to Bitcoin address (pay-to-pubkey-hash)
     // scriptPubKey: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
     public static func buildPublicKeyHashOut(pubKeyHash: Data) -> Data {
+        return buildPublicKeyHashOut(pubKeyHash: pubKeyHash).data
+    }
+
+    // Standard Transaction to Bitcoin address (pay-to-pubkey-hash)
+    // scriptPubKey: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+    public static func buildPublicKeyHashOut(pubKeyHash: Data) -> Script {
         let script = try! Script()
             .append(.OP_DUP)
             .append(.OP_HASH160)
             .appendData(pubKeyHash)
             .append(.OP_EQUALVERIFY)
             .append(.OP_CHECKSIG)
-        return script.data
+        return script
     }
 
     public static func buildPublicKeyUnlockingScript(signature: Data, pubkey: PublicKey, hashType: SighashType) -> Data {

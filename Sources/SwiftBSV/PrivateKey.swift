@@ -74,6 +74,9 @@ public struct PrivateKey {
         }
 
         let data = buffer[1..<33]
+
+//        let string = data.hex
+//        let bn = BInt(str: string, radix: 16)!
         let bn = BInt(data: data)
 
         self.bn = bn

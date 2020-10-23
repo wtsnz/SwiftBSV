@@ -77,3 +77,13 @@ extension Address: CustomStringConvertible {
         return toString()
     }
 }
+
+// MARK: - Address+Script
+
+extension Address {
+    /// Return the P2PKH script from this address
+    public func toTxOutputScript() -> Script {
+        return Script.buildPublicKeyHashOut(pubKeyHash: hashBuffer)
+    }
+
+}

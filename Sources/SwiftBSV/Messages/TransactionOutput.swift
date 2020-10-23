@@ -66,3 +66,13 @@ public struct TransactionOutput {
         return TransactionOutput(value: value, lockingScript: lockingScript)
     }
 }
+
+// MARK: - TransactionOutput+Script
+
+extension TransactionOutput {
+
+    func getScript() -> Script {
+        Script(data: lockingScript)!
+    }
+
+}

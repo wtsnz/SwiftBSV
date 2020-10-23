@@ -10,17 +10,17 @@ import secp256k1
 import CryptoSwift
 import Foundation
 
-//public class EllipticCurveEncrypterSecp256k1 {
+public class EllipticCurveEncrypterSecp256k1 {
 //    // holds internal state of the c library
-//    private let context: OpaquePointer
+    private let context: OpaquePointer
 //    
-//    public init() {
-//        context = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY))!
-//    }
-//    
-//    deinit {
-//        secp256k1_context_destroy(context)
-//    }
+    public init() {
+        context = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY))!
+    }
+
+    deinit {
+        secp256k1_context_destroy(context)
+    }
 //    
 //    /// Recovers public key from the PrivateKey. Use import(signature:) to convert signature from bytes.
 //    ///
@@ -41,35 +41,35 @@ import Foundation
     ///   - hash: 32-byte (256-bit) hash of the message
     ///   - privateKey: 32-byte private key
     /// - Returns: signature data structure if signing succeeded, otherwise nil.
-//    public func sign(hash: Data, privateKey: Data) -> secp256k1_ecdsa_recoverable_signature? {
-//        precondition(hash.count == 32, "Hash must be 32 bytes size")
-//        var signature = secp256k1_ecdsa_recoverable_signature()
-//        privateKey.withUnsafeBytes { privateKey -> Void in
-//            guard let privateKeyPtr = privateKey.bindMemory(to: UInt8.self).baseAddress else { return }
-//            hash.withUnsafeBytes { hash -> Void in
-//                guard let hashPtr = hash.bindMemory(to: UInt8.self).baseAddress else { return }
-//                secp256k1_ecdsa_sign_recoverable(context, &signature, hashPtr, privateKeyPtr, nil, nil)
-//            }
-//        }
-//        return signature
-//    }
+    public func sign(hash: Data, privateKey: Data) -> secp256k1_ecdsa_recoverable_signature? {
+        precondition(hash.count == 32, "Hash must be 32 bytes size")
+        var signature = secp256k1_ecdsa_recoverable_signature()
+        privateKey.withUnsafeBytes { privateKey -> Void in
+            guard let privateKeyPtr = privateKey.bindMemory(to: UInt8.self).baseAddress else { return }
+            hash.withUnsafeBytes { hash -> Void in
+                guard let hashPtr = hash.bindMemory(to: UInt8.self).baseAddress else { return }
+                secp256k1_ecdsa_sign_recoverable(context, &signature, hashPtr, privateKeyPtr, nil, nil)
+            }
+        }
+        return signature
+    }
 
     /// Converts signature data structure to 65 bytes.
     ///
     /// - Parameter signature: signature data structure
     /// - Returns: 65 byte exported signature data.
-//    public func export(signature: inout secp256k1_ecdsa_recoverable_signature) -> Data {
-//        var output = Data(count: 65)
-//        var recId = 0 as Int32
-//        _ = output.withUnsafeMutableBytes { output in
-//            guard let p = output.bindMemory(to: UInt8.self).baseAddress else { return }
-//            secp256k1_ecdsa_recoverable_signature_serialize_compact(context, p, &recId, &signature)
-//        }
-//
-//        output[64] = UInt8(recId)
-//        return output
-//    }
-//    
+    public func export(signature: inout secp256k1_ecdsa_recoverable_signature) -> Data {
+        var output = Data(count: 65)
+        var recId = 0 as Int32
+        _ = output.withUnsafeMutableBytes { output in
+            guard let p = output.bindMemory(to: UInt8.self).baseAddress else { return }
+            secp256k1_ecdsa_recoverable_signature_serialize_compact(context, p, &recId, &signature)
+        }
+
+        output[64] = UInt8(recId)
+        return output
+    }
+
 //    /// Converts serialized signature into library's signature format. Use it to supply signature to
 //    /// the publicKey(signature:hash:) method.
 //    ///
@@ -120,7 +120,7 @@ import Foundation
 //
 //    ///https://github.com/YLan1/SIPCWeb3Swift/blob/2a3cffff922013e3e3205dee6e82aa976ecc047e/Sources/web3swift/Convenience/LibSecp256k1Extension.swift
 //
-//    private static var context = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY))
+    private static var context = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY))
 //
 //    public func verifyPrivateKey(privateKey: Data) throws -> Bool {
 //        try privateKey.checkPrivateKeySize()
@@ -161,7 +161,7 @@ import Foundation
 //        return Data(serializedPubkey)
 //    }
 //
-//}
+}
 //
 //extension Data {
 //
