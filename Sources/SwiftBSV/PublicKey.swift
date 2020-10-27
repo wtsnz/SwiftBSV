@@ -70,7 +70,9 @@ public struct PublicKey {
 
     /// Encode the PublicKey into DER data
     /// - Returns: DER data buffer
-    public func toDer() -> Data {
+    public func toDer(compressed: Bool? = nil) -> Data {
+        let isCompressed = compressed != nil ? compressed! : self.isCompressed
+
         let xBuffer = point.x.data
         let yBuffer = point.y.data
 

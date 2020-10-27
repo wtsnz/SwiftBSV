@@ -15,9 +15,9 @@ public struct Address {
     let hashBuffer: Data
 
     /// Create an Address from an existing Public Key
-    public init(_ publicKey: PublicKey, network: Network = .mainnet) {
+    public init(_ publicKey: PublicKey, network: Network = .mainnet, compressed: Bool? = nil) {
         self.network = network
-        self.hashBuffer = Crypto.sha256ripemd160(publicKey.toDer())
+        self.hashBuffer = Crypto.sha256ripemd160(publicKey.toDer(compressed: compressed))
         self.versionByteNum = network.address.publicKeyHash
     }
 

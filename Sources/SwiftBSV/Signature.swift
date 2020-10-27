@@ -32,8 +32,8 @@ struct Signature {
             return nil
         }
 
-        r = buffer[0..<32]
-        s = buffer[32..<64]
+        self.r = buffer[0..<32]
+        self.s = buffer[32..<64]
     }
 
     init?(txFormatBuffer buffer: Data) {
@@ -55,14 +55,18 @@ struct Signature {
 
     /// The format used in the Bitcoin Signed Message
     init?(fromCompact buffer: Data) {
+        guard buffer.count == 1 + 32 + 32 else {
+            return nil
+        }
+
         var compressed = true
-        var recoveryId = Int(buffer[0] - 27 - 4)
+        var recoveryId = Int(Int(buffer[0]) - 27 - 4)
         if recoveryId < 0 {
             compressed = false
             recoveryId = recoveryId + 4
         }
 
-        let rsBuffer = Data(buffer.suffix(from: 1))
+        let rsBuffer = Data(buffer[1..<buffer.count])
 
         self.init(fromRsBuffer: rsBuffer)
 
@@ -116,8 +120,8 @@ struct Signature {
 
         var buffer = Data()
         buffer += UInt8(val)
-        buffer += r[0..<32]
-        buffer += s[0..<32]
+        buffer += r
+        buffer += s
         return buffer
     }
 

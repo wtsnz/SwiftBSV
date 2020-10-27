@@ -7,6 +7,7 @@
 //
 
 import Foundation
+
 /**
  * Bitcoin Signed Message
  * ======================
@@ -20,7 +21,6 @@ import Foundation
  */
 struct BitcoinSignedMessage {
 
-
     /// Sign the message with the private key
     /// - Parameters:
     ///   - message: the message you'd like to sign
@@ -31,20 +31,10 @@ struct BitcoinSignedMessage {
         let hashBuf = magicHash(message: messageData)
         let (sig, recoveryId) = Crypto.signCompact(hashBuf, privateKey: privateKey)
 
-        // BSV.js calculates the full public key here
+        var signature = Signature(fromRsBuffer: sig)
+        signature?.recovery = Int(recoveryId)
 
-        var value = recoveryId + 27 + 4
-
-        let isCompressed = true
-        if isCompressed == false {
-            value = value - 4
-        }
-
-        var sigData = Data()
-        sigData += UInt8(value)
-        sigData += sig
-
-        return sigData.base64EncodedString()
+        return signature!.toBuffer().base64EncodedString()
     }
 
     static func verify(message: String, signature: String, address: Address) -> Bool {
@@ -58,35 +48,38 @@ struct BitcoinSignedMessage {
             return false
         }
 
-        let sig = sigBuffer.suffix(from: 1)
-
-        // Sig From compact
-        var isCompressed = true
-        var recovery = sigBuffer[0] - 27 - 4
-
-        if recovery < 0 {
-            isCompressed = false
-            recovery = recovery + 4
+        guard let signature = Signature(fromCompact: sigBuffer) else {
+            return false
         }
+
+        var sig = Data()
+        sig += signature.r
+        sig += signature.s
 
         let publicKeyBytes = try! Secp256k1.recoverCompact(
             msg: hashBuf.bytes,
             sig: sig.bytes,
-            recID: Secp256k1.RecoveryID(recovery),
-            compression: Secp256k1.Compression.uncompressed
+            recID: Secp256k1.RecoveryID(signature.recovery!),
+            compression: signature.isCompressed! ? .compressed : .uncompressed
         )
 
         guard let publicKey = PublicKey(fromDer: Data(publicKeyBytes)) else {
             return false
         }
 
-        let valid = Secp256k1.verifyCompact(msg: hashBuf.bytes, sig: sig.bytes, pubkey: publicKeyBytes)
-
-        guard valid == true else {
+        guard Secp256k1.verifyCompact(
+            msg: hashBuf.bytes,
+            sig: sig.bytes,
+            pubkey: publicKeyBytes
+        ) == true else {
             return false
         }
 
-        guard address.hashBuffer == publicKey.address.hashBuffer else {
+        // Not sure if we need to do this, but when writing this, there were a few cases where the address would be incorrect due to the difference in public key compression.
+        var otherPublicKey = publicKey
+        otherPublicKey.isCompressed.toggle()
+
+        guard address.hashBuffer == publicKey.address.hashBuffer || address.hashBuffer == otherPublicKey.address.hashBuffer else {
             return false
         }
 
