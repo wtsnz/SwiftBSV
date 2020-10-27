@@ -68,13 +68,18 @@ public final class Crypto {
         let sig_ = try! Secp256k1.sign(msg: message.bytes, with: privateKey.data.bytes, nonceFunction: Secp256k1.NonceFunction.rfc6979)
         let sig = Data(sig_)
 
-
         let a = try! ECDSA.signMessage(message, withPrivateKey: privateKey.data)
         let b =  ECDSA.sign(message, privateKey: privateKey.data)
 
         precondition(a == sig)
 
         return sig
+    }
+
+    public static func signCompact(_ message: Data, privateKey: PrivateKey) -> (sig: Data, recoveryId: Int32) {
+        let compact = try! Secp256k1.signCompact(msg: message.bytes, with: privateKey.data.bytes, nonceFunction: Secp256k1.NonceFunction.rfc6979)
+
+        return (sig: Data(compact.sig), recoveryId: compact.recID)
     }
 
     public static func verifySignature(_ signature: Data, message: Data, publicKey: PublicKey) -> Bool {

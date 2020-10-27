@@ -115,6 +115,11 @@ public final class ECDSA {
 
     static public func verifySignatureCompact(_ sigData: Data, message: Data, publicKeyData: Data) throws -> Bool {
         guard let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_VERIFY)) else { return false }
+
+        defer {
+            secp256k1_context_destroy(ctx);
+        }
+
         var pubkey = secp256k1_pubkey()
         var signature = secp256k1_ecdsa_signature()
         secp256k1_ecdsa_signature_parse_compact(ctx, &signature, sigData.bytes)
@@ -126,7 +131,7 @@ public final class ECDSA {
         if (secp256k1_ecdsa_verify(ctx, &signature, message.bytes, &pubkey) != 1) {
             return false
         };
-        secp256k1_context_destroy(ctx);
+
         return true
     }
 }
