@@ -33,9 +33,9 @@ public struct TransactionInput {
         return VarInt(signatureScript.count)
     }
     /// Computational Script for confirming transaction authorization
-    public let signatureScript: Data
+    public var signatureScript: Data
     /// Transaction version as defined by the sender. Intended for "replacement" of transactions when information is updated before inclusion into a block.
-    public let sequence: UInt32
+    public var sequence: UInt32
 
     public init(previousOutput: TransactionOutPoint, signatureScript: Data, sequence: UInt32) {
         self.previousOutput = previousOutput
@@ -104,6 +104,10 @@ extension TransactionInput {
             signatureScript: filledScript.data,
             sequence: sequence
         )
+    }
+
+    mutating func setScript(_ script: Script) {
+        self.signatureScript = script.data
     }
 
 }

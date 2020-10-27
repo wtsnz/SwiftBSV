@@ -36,13 +36,13 @@ public struct Transaction {
         return VarInt(inputs.count)
     }
     /// A list of 1 or more transaction inputs or sources for coins
-    private(set) var inputs: [TransactionInput]
+    public var inputs: [TransactionInput]
     /// Number of Transaction outputs
     public var txOutCount: VarInt {
         return VarInt(outputs.count)
     }
     /// A list of 1 or more transaction outputs or destinations for coins
-    private(set) var outputs: [TransactionOutput]
+    public var outputs: [TransactionOutput]
     /// A list of witnesses, one for each input; omitted if flag is omitted above
     // public let witnesses: [TransactionWitness] // A list of witnesses, one for each input; omitted if flag is omitted above
     /// The block number or timestamp at which this transaction is unlocked:
@@ -224,48 +224,123 @@ extension Transaction {
         return Crypto.sha256sha256(data)
     }
 
-    func sighash(nHashType: SighashType, nIn: Int, subScript: Script, value: UInt64, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Data {
+    func sighash(nHashType: SighashType, nIn: Int, subScript: Script, value: UInt64, flags: TransactionSigHashFlags = .none) -> Data {
 
+        // start with UAHF part (Bitcoin SV)
+        // https://github.com/Bitcoin-UAHF/spec/blob/master/replay-protected-sighash.md
         if nHashType.hasForkId && flags.contains(.scriptEnableSighashForkId) {
-
-            var hashPrevouts = Data(repeating: 0, count: 32)
-            var hashSequence = Data(repeating: 0, count: 32)
-            var hashOutputs = Data(repeating: 0, count: 32)
-
-            if !nHashType.isAnyoneCanPay {
-                hashPrevouts = self.hashPrevouts()
-            }
-
-            if !nHashType.isAnyoneCanPay && (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
-                hashSequence = self.hashSequence()
-            }
-
-            if (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
-                hashOutputs = self.hashOutputs()
-            } else if (nHashType.rawValue & 0x1f == BSVSighashType.SINGLE.rawValue) && nIn < outputs.count {
-                hashOutputs = Crypto.sha256sha256(outputs[nIn].serialized())
-            }
-
-            var data = Data()
-            data += version
-            data += hashPrevouts
-            data += hashSequence
-            data += inputs[nIn].previousOutput.hash
-            data += inputs[nIn].previousOutput.index
-            data += VarInt(subScript.data.count).data
-            data += subScript.data
-            data += value
-            data += inputs[nIn].sequence
-            data += hashOutputs
-            data += lockTime
-            data += nHashType.uint32
-
-            let hash = Crypto.sha256sha256(data).reversed()
-            return Data(hash)
+            return Transaction.bip143_sighash(tx: self, nHashType: nHashType, nIn: nIn, subScript: subScript, value: value)
         }
 
-        return Data()
+        return Transaction.legacySigHash(tx: self, nHashType: nHashType, nIn: nIn, subScript: subScript)
+    }
 
+    /// Generates a transaction digest for signing using BIP-143
+    ///
+    /// This is to be used for all tranasctions after the August 2017 fork.
+    /// It fixing quadratic hashing and includes the amount spent in the hash.
+    private static func bip143_sighash(tx: Transaction, nHashType: SighashType, nIn: Int, subScript: Script, value: UInt64) -> Data {
+        var hashPrevouts = Data(repeating: 0, count: 32)
+        var hashSequence = Data(repeating: 0, count: 32)
+        var hashOutputs = Data(repeating: 0, count: 32)
+
+        if !nHashType.isAnyoneCanPay {
+            hashPrevouts = tx.hashPrevouts()
+        }
+
+        if !nHashType.isAnyoneCanPay && (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
+            hashSequence = tx.hashSequence()
+        }
+
+        if (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
+            hashOutputs = tx.hashOutputs()
+        } else if (nHashType.rawValue & 0x1f == BSVSighashType.SINGLE.rawValue) && nIn < tx.outputs.count {
+            hashOutputs = Crypto.sha256sha256(tx.outputs[nIn].serialized())
+        }
+
+        var data = Data()
+        data += tx.version
+        data += hashPrevouts
+        data += hashSequence
+        data += tx.inputs[nIn].previousOutput.hash
+        data += tx.inputs[nIn].previousOutput.index
+        data += VarInt(subScript.data.count).data
+        data += subScript.data
+        data += value
+        data += tx.inputs[nIn].sequence
+        data += hashOutputs
+        data += tx.lockTime
+        data += nHashType.uint32
+
+        let hash = Crypto.sha256sha256(data).reversed()
+        return Data(hash)
+    }
+
+    /// Generates the transaction digest for signing using the legacy algorithm
+    ///
+    /// This is used for all transaction validation before the August 2017 fork.
+    private static func legacySigHash(tx: Transaction, nHashType: SighashType, nIn: Int, subScript: Script) -> Data {
+        var txCopy = tx
+
+        // Remove all OP_CODESEPARATOR from the subScript
+        var subScript = Script(chunks: subScript.scriptChunks)
+        try! subScript.deleteOccurrences(of: OpCode.OP_CODESEPARATOR)
+
+        var blankInputs = txCopy.inputs.map({ TransactionInput(previousOutput: $0.previousOutput, signatureScript: Script().data, sequence: $0.sequence) })
+
+        blankInputs[nIn] = TransactionInput(previousOutput: blankInputs[nIn].previousOutput, signatureScript: subScript.data, sequence: blankInputs[nIn].sequence)
+
+        txCopy.inputs = blankInputs
+
+
+        if nHashType.isNone {
+            txCopy.outputs = []
+
+            // TODO Check tat this var modifies the array, not just the local var
+            for (index, var input) in txCopy.inputs.enumerated() {
+                if index != nIn {
+                    input.sequence = 0
+                }
+            }
+        } else if nHashType.isSingle {
+            // The SIGHASH_SINGLE bug.
+            // https://bitcointalk.org/index.php?topic=260595.0
+            if nIn > txCopy.outputs.count - 1 {
+                return Data(hex: "0000000000000000000000000000000000000000000000000000000000000001")
+            }
+
+            var outputs = txCopy.outputs
+            // TODO Check tat this var modifies the array, not just the local var
+            for (index, _) in outputs.enumerated() {
+                if index < nIn {
+                    outputs[index] = TransactionOutput(
+                        value: .max,
+                        lockingScript: Script().data
+                    )
+                }
+            }
+
+            // TODO Check tat this var modifies the array, not just the local var
+            for (index, var input) in txCopy.inputs.enumerated() {
+                if index != nIn {
+                    input.sequence = 0
+                }
+            }
+
+            txCopy.outputs = outputs
+
+        }
+
+        // else sighash all
+
+        if nHashType.isAnyoneCanPay {
+            txCopy.inputs = [txCopy.inputs[nIn]]
+        }
+
+        let data = txCopy.serialized()
+        let hash = Data(Crypto.sha256sha256(data).reversed())
+
+        return hash
     }
 
     /// Sign and return the signature
