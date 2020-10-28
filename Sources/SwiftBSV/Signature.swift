@@ -44,10 +44,7 @@ struct Signature {
             return nil
         }
 
-        self.nHashType = SighashType(nHashType)
-        if self.nHashType == nil {
-            self.nHashType = SighashType(nHashType)
-        }
+        self.nHashType = SighashType(ui8: nHashType)
 
         self.r = sig.r
         self.s = sig.s
@@ -170,7 +167,7 @@ struct Signature {
         let nHashTypeBuf: Data = {
             var buf = Data()
             if let nHashType = self.nHashType {
-                buf += nHashType.rawValue
+                buf += nHashType.sighash
             } else {
                 buf += UInt8(0)
             }

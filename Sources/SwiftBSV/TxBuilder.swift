@@ -289,10 +289,10 @@ class TxBuilder {
 
     // MARK: - Signatures
 
-    func getSig(privateKey: PrivateKey, nHashType: SighashType = SighashType.BSV.ALL, nIn: Int, subScript: Script, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Data {
+    func getSig(privateKey: PrivateKey, sighashType: SighashType = SighashType.BSV.ALL, nIn: Int, subScript: Script, signatureVersion: SignatureVersion = .forkId) -> Data {
         var value = UInt64()
 
-        if nHashType.hasForkId && flags.contains(.scriptEnableSighashForkId) {
+        if sighashType.hasForkId && signatureVersion == .forkId {
             let txHashBuf = transactionInputs[nIn].previousOutput.hash
             let txOutNum = transactionInputs[nIn].previousOutput.index
             if let txOut = uTxOutMap.get(txHashBuf: txHashBuf, txOutNum: txOutNum) {
@@ -300,12 +300,12 @@ class TxBuilder {
             }
         }
 
-        return transaction.sign(privateKey: privateKey, nHashType: nHashType, nIn: nIn, subScript: subScript, value: value, flags: flags)
+        return transaction.sign(privateKey: privateKey, sighashType: sighashType, nIn: nIn, subScript: subScript, value: value, signatureVersion: signatureVersion)
     }
 
     /// Sign the input with the private key. Only supports PayToPublicKeyHash inputs
     @discardableResult
-    func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, nHashType: SighashType = SighashType.BSV.ALL, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Self {
+    func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, sighashType: SighashType = SighashType.BSV.ALL, signatureVersion: SignatureVersion = .forkId) -> Self {
 
         var nScriptChunk = nScriptChunk
         let txIn = transaction.inputs[nIn]
@@ -333,15 +333,16 @@ class TxBuilder {
 
         let outputScript = txOut!.lockingScript
         let subScript = Script(data: outputScript)!
-        let sig = getSig(privateKey: privateKey, nHashType: nHashType, nIn: nIn, subScript: subScript, flags: flags)
 
-        fillSig(nIn: nIn, nScriptChunk: scriptChunk, sig: sig, sigHashType: nHashType, publicKey: privateKey.publicKey)
+        let sig = getSig(privateKey: privateKey, sighashType: sighashType, nIn: nIn, subScript: subScript, signatureVersion: signatureVersion)
+
+        fillSig(nIn: nIn, nScriptChunk: scriptChunk, sig: sig, sighashType: sighashType, publicKey: privateKey.publicKey)
 
         return self
     }
 
-    func fillSig(nIn: Int, nScriptChunk: Int, sig: Data, sigHashType: SighashType, publicKey: PublicKey) {
-        transaction.fillSig(nIn: nIn, nScriptChunk: nScriptChunk, sig: sig, sigHashType: sigHashType, publicKey: publicKey)
+    func fillSig(nIn: Int, nScriptChunk: Int, sig: Data, sighashType: SighashType, publicKey: PublicKey) {
+        transaction.fillSig(nIn: nIn, nScriptChunk: nScriptChunk, sig: sig, sighashType: sighashType, publicKey: publicKey)
     }
 
 }

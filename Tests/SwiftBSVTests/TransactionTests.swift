@@ -22,7 +22,7 @@ class TransactionTests: XCTestCase {
         var tx = Transaction.deserialize(tx2buf)
         tx.outputs = [tx.outputs[0]]
 
-        let hashBuf = tx.sighash(nHashType: SighashType.BTC.SINGLE, nIn: 1, subScript: Script(), value: 0)
+        let hashBuf = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .forkId, sighashType: SighashType.BTC.SINGLE, nIn: 1, subScript: Script(), value: 0)
 
         XCTAssertEqual(hashBuf.hex, "0000000000000000000000000000000000000000000000000000000000000001")
     }
@@ -30,18 +30,9 @@ class TransactionTests: XCTestCase {
     func testKnowntx() {
         let txraw = "907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229"
 
-//        "",
-//        2,
-//        1864164639,
-//
-
         let tx = Transaction.deserialize(Data(hex: txraw))
-
-        let sighash = UInt32(1864164639)
-        let nHashType = SighashType(uint32: sighash)
-
-        let hash = tx.signatureHash(sigHashType: sighash, nIn: 2, subScript: Script(), value: 0)
-
+        let sighash = 1864164639
+        let hash = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .forkId, sighashType: SighashType(i: sighash), nIn: 2, subScript: Script(), value: 0)
 
         XCTAssertEqual(hash.hex, "31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e")
     }
@@ -54,61 +45,56 @@ class TransactionTests: XCTestCase {
 
         XCTAssertEqual(txraw, serial)
 
-        let sighash = UInt32(truncatingIfNeeded: -1718831517)
-//        let chunks = ChunkHelpers.chunksFromAsmString("ac5363")
-//        let scriptData = ChunkHelpers.chunksToBuffer(chunks)
-
+        let sighash = Int(-1718831517)
         let script = Script(hex: "ac5363")!
-
-        let hash = tx.signatureHash(sigHashType: sighash, nIn: 0, subScript: script, value: 0)
+        let hash = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .legacy, sighashType: SighashType(i: sighash), nIn: 0, subScript: script, value: 0)
 
         XCTAssertEqual(hash.hex, "b0dc030661783dd9939e4bf1a6dfcba809da2017e1b315a6312e5942d714cf05")
     }
 
-    func testVectors() {
-//        let txValidJson = TestHelpers.jsonResource(pathComponents: [
-//            "vectors",
-//            "bitcoind",
-//            "tx_valid.json"
-//        ])
-//
-//        let txValidJsonArray = txValidJson as! NSArray
-//
-//        txValidJsonArray.forEach { vector in
-//            let vector = vector as! NSArray
-//
-//            if vector.count == 1 {
-//                return
-//            }
-//
-//            let txBuf = Data(hex: vector[1] as! String)
-//            let tx = Transaction.deserialize(txBuf)
-//
-//            XCTAssertEqual(tx.serialized().hex, txBuf.hex)
-//        }
-//
-//        // --- Tx Invalid
-//
-//        let txInvalidJson = TestHelpers.jsonResource(pathComponents: [
-//            "vectors",
-//            "bitcoind",
-//            "tx_invalid.json"
-//        ])
-//
-//        let txInvalidJsonArray = txInvalidJson as! NSArray
-//
-//        txInvalidJsonArray.forEach { vector in
-//            let vector = vector as! NSArray
-//
-//            if vector.count == 1 {
-//                return
-//            }
-//
-//            let txBuf = Data(hex: vector[1] as! String)
-//            let tx = Transaction.deserialize(txBuf)
-//
-//            XCTAssertEqual(tx.serialized().hex, txBuf.hex)
-//        }
+    func testSighashVectors() {
+
+        // --- Tx Sighash
+
+        let bsvSighashJson = TestHelpers.jsonResource(pathComponents: [
+            "vectors",
+            "bitcoin-sv",
+            "sighash.json"
+        ])
+
+        let bsvSighashJsonArray = bsvSighashJson as! NSArray
+
+        bsvSighashJsonArray.forEach { vector in
+
+            let vector = vector as! NSArray
+
+            if vector.count == 1 {
+                return
+            }
+
+            let raw_tx = Data(hex: vector[0] as! String)
+            let raw_script = Data(hex: vector[1] as! String)
+            let nIn = vector[2] as! NSNumber
+            let sighashNsNumber = vector[3] as! NSNumber
+            let sighashRegHex = vector[4] as! String
+            let sighashOldHex = vector[5] as! String
+
+            let script = Script(data: raw_script)!
+            let tx = Transaction.deserialize(raw_tx)
+
+            XCTAssertEqual(tx.serialized().hex, raw_tx.hex)
+
+            let sighashValue = sighashNsNumber.intValue
+            let sighashType = SighashType(i: sighashValue)
+
+            let hashReg = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .forkId, sighashType: sighashType, nIn: Int(truncating: nIn), subScript: script, value: 0)
+
+            let hashOld = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .legacy, sighashType: sighashType, nIn: Int(truncating: nIn), subScript: script, value: 0)
+
+
+            XCTAssertEqual(hashReg.hex, sighashRegHex)
+            XCTAssertEqual(hashOld.hex, sighashOldHex)
+        }
 
         // --- Tx SigHash
 
@@ -137,22 +123,13 @@ class TransactionTests: XCTestCase {
 
             let tx = Transaction.deserialize(txBuf)
 
-            let utxo = tx.inputs.first(where: { $0.signatureScript.hex == scriptBuf.hex })
-
             XCTAssertEqual(tx.serialized().hex, txBuf.hex)
 
-            var sighashValue = nHashType.intValue
-            var sighash = UInt32(truncatingIfNeeded: sighashValue)
-            let sighashType = SighashType(int: nHashType.intValue)
+            let sighashValue = nHashType.intValue
+            let sighash = UInt32(truncatingIfNeeded: sighashValue)
+            let sighashType = SighashType(i: sighashValue)
 
-            var transactionSigHashFlags = TransactionSigHashFlags()
-            if sighashType.hasForkId {
-                transactionSigHashFlags = .scriptEnableSighashForkId
-            }
-
-            let hash = tx.signatureHash(sigHashType: sighash, nIn: Int(truncating: nIn), subScript: script, value: 0, flags: .none)
-
-//            let sighash = tx.sighash(nHashType: _nHashType, nIn: Int(truncating: nIn), subScript: Script(data: scriptBuf)!, value: 0, flags: transactionSigHashFlags)
+            let hash = TransactionInputSigner.signatureHash(tx: tx, signatureVersion: .legacy, sighashType: sighashType, nIn: Int(truncating: nIn), subScript: script, value: 0)
 
             XCTAssertEqual(hash.hex, sigHashBuf.hex)
         }

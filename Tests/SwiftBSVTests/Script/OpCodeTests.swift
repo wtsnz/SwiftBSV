@@ -596,7 +596,7 @@ class OpCodeTests: XCTestCase {
         XCTFail("TODO: Not implemented yet")
 
         return;
-        
+
         let opcode = OpCode.OP_CHECKSIG
 
         // BTC Transaction in testnet3
@@ -618,17 +618,17 @@ class OpCodeTests: XCTestCase {
         let unsignedTx = Transaction(version: 1, inputs: [inputForSign], outputs: [], lockTime: 0)
 
         // sign
-        let hashType: SighashType = SighashType.BTC.ALL
+        let sighashType: SighashType = SighashType.BTC.ALL
         let utxoToSign = TransactionOutput(value: balance, lockingScript: subScript)
 
-        let _txhash = unsignedTx.sighash(nHashType: hashType, nIn: 0, subScript: Script(data: subScript)!, value: balance, flags: .none)
+        let _txhash = TransactionInputSigner.signatureHash(tx: unsignedTx, signatureVersion: .legacy, sighashType: sighashType, nIn: 0, subScript: Script(data: subScript)!, value: balance)
 
         guard let signature: Data = try? Crypto.sign(_txhash, privateKey: privateKey) else {
             XCTFail("Failed to sign tx.")
             return
         }
 
-        let sigData: Data = signature + hashType.rawValue
+        let sigData: Data = signature + sighashType.baseType.rawValue // TODO: This might not be right
         let pubkeyData: Data = fromPublicKey.toDer()
 
         // OP_CHECKSIG success
@@ -711,17 +711,17 @@ class OpCodeTests: XCTestCase {
         let unsignedTx = Transaction(version: 1, inputs: [inputForSign], outputs: [], lockTime: 0)
 
         // sign
-        let hashType: SighashType = SighashType.BSV.ALL
+        let sighashType: SighashType = SighashType.BSV.ALL
         let utxoToSign = TransactionOutput(value: balance, lockingScript: subScript)
 
-        let _txHash = unsignedTx.sighash(nHashType: hashType, nIn: 0, subScript: Script(data: subScript)!, value: balance, flags: .scriptEnableSighashForkId)
+        let _txhash = TransactionInputSigner.signatureHash(tx: unsignedTx, signatureVersion: .forkId, sighashType: sighashType, nIn: 0, subScript: Script(data: subScript)!, value: balance)
 
-        guard let signature: Data = try? Crypto.sign(_txHash, privateKey: privateKey) else {
+        guard let signature: Data = try? Crypto.sign(_txhash, privateKey: privateKey) else {
             XCTFail("Failed to sign tx.")
             return
         }
 
-        let sigData: Data = signature + hashType.rawValue
+        let sigData: Data = signature + sighashType.baseType.rawValue
         let pubkeyData: Data = fromPublicKey.point.serialize()
 
         // OP_CHECKSIG success

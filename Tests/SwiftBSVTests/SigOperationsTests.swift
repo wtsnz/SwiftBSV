@@ -13,34 +13,54 @@ import XCTest
 class SigOperationsTests: XCTestCase {
 
     func testSighashType() {
-        var sighashType = SighashType(uint32: 0x00000001)
+        var sighashType = SighashType(i: 0x00000001)
         XCTAssertEqual(sighashType.isAll, true)
         XCTAssertEqual(sighashType.isNone, false)
         XCTAssertEqual(sighashType.isSingle, false)
-        XCTAssertEqual(sighashType.isAnyoneCanPay, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, false)
         XCTAssertEqual(sighashType.hasForkId, false)
 
-        sighashType = SighashType(0x02)
+        sighashType = SighashType(i: 0x02)
         XCTAssertEqual(sighashType.isAll, false)
         XCTAssertEqual(sighashType.isNone, true)
         XCTAssertEqual(sighashType.isSingle, false)
-        XCTAssertEqual(sighashType.isAnyoneCanPay, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, false)
         XCTAssertEqual(sighashType.hasForkId, false)
 
-        sighashType = SighashType(0x03)
+        sighashType = SighashType(i: 0x03)
         XCTAssertEqual(sighashType.isAll, false)
         XCTAssertEqual(sighashType.isNone, false)
         XCTAssertEqual(sighashType.isSingle, true)
-        XCTAssertEqual(sighashType.isAnyoneCanPay, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, false)
         XCTAssertEqual(sighashType.hasForkId, false)
 
-        sighashType = SighashType(0x3 + 0x40)
+        sighashType = SighashType(i: 0x3 + 0x40)
         XCTAssertEqual(sighashType.isAll, false)
         XCTAssertEqual(sighashType.isNone, false)
         XCTAssertEqual(sighashType.isSingle, true)
-        XCTAssertEqual(sighashType.isAnyoneCanPay, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, false)
         XCTAssertEqual(sighashType.hasForkId, true)
 
+        sighashType = SighashType(i: 0x3 + 0x2)
+        XCTAssertEqual(sighashType.isAll, true)
+        XCTAssertEqual(sighashType.isNone, false)
+        XCTAssertEqual(sighashType.isSingle, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, false)
+        XCTAssertEqual(sighashType.hasForkId, false)
+
+        sighashType = SighashType(i: -1835000116)
+        XCTAssertEqual(sighashType.isAll, true)
+        XCTAssertEqual(sighashType.isNone, false)
+        XCTAssertEqual(sighashType.isSingle, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, true)
+        XCTAssertEqual(sighashType.hasForkId, true)
+
+        sighashType = SighashType(i: -1835000116)
+        XCTAssertEqual(sighashType.isAll, true)
+        XCTAssertEqual(sighashType.isNone, false)
+        XCTAssertEqual(sighashType.isSingle, false)
+        XCTAssertEqual(sighashType.hasAnyoneCanPay, true)
+        XCTAssertEqual(sighashType.hasForkId, true)
     }
 
 //    let txHashBuf = Data(repeating: 0x01, count: 32)

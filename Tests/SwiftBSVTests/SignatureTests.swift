@@ -29,7 +29,7 @@ class SignatureTests: XCTestCase {
         XCTAssertEqual(sig?.r.hex, "008bab1f0a2ff2f9cb8992173d8ad73c229d31ea8e10b0f4d4ae1a0d8ed76021fa")
         XCTAssertEqual(sig?.s.hex, "0993a6ec81755b9111762fc2cf8e3ede73047515622792110867d12654275e72")
 
-        XCTAssertEqual(sig?.nHashType?.rawValue, 1)
+        XCTAssertEqual(sig?.nHashType?.baseType.rawValue, 1)
     }
 
     func testParseTxBufferAndRecreate() {

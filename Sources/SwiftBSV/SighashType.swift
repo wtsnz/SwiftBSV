@@ -16,163 +16,114 @@ private let SIGHASH_ANYONECANPAY: UInt8 = 0x80 // 10000000
 
 private let SIGHASH_OUTPUT_MASK: UInt8 = 0x1f // 00011111
 
-//public enum SighashBase: UInt8 {
-//    case all = 1
-//    case none = 2
-//    case single = 3
-//
-//    var uint32: UInt32 {
-//        return UInt32(rawValue)
-//    }
-//}
-//
-//public struct SighashTypeV2 {
-//
-//    let base: SighashBase
-//    let anyoneCanPay: Bool
-//    let hasForkId: Bool
-//
-//    var uint32: UInt32 {
-//        var base = self.base.uint32
-//
-//        if anyoneCanPay {
-//            base = base | 0x80
-//        }
-//
-//        if hasForkId {
-//            base = base | 0x40
-//        }
-//
-//        return base
-//    }
-//
-//    init(base: SighashBase, anyoneCanPay: Bool, hasForkId: Bool) {
-//        self.base = base
-//        self.anyoneCanPay = anyoneCanPay
-//        self.hasForkId = hasForkId
-//    }
-//
-//    static func from(_ uint: UInt32) -> SighashTypeV2? {
-//        let anyoneCanPay = (uint & 0x80) == 0x80
-//        let hasForkId = (uint & 0x40) == 0x40
-//        let base: SighashBase = {
-//            switch (uint & 0x1f) {
-//            case 3:
-//                return .single
-//            case 2:
-//                return .none
-//            case 1:
-//                return .all
-//            default:
-//                return .all
-//            }
-//        }()
-//
-//        return SighashTypeV2(
-//            base: base,
-//            anyoneCanPay: anyoneCanPay,
-//            hasForkId: hasForkId
-//        )
-//    }
-//
-//
-//}
+public enum SignatureVersion: Equatable {
+    case forkId
+    case legacy
+}
 
-public struct SighashType {
-    fileprivate let uint8: UInt8
+public enum SighashBase: UInt8, Equatable {
+    case unsupported = 0
+    case all = 1
+    case none = 2
+    case single = 3
 
-    init(int: Int) {
-        self.init(uint32: UInt32(truncatingIfNeeded: int))
-    }
-
-    init(_ uint8: UInt8) {
-        self.uint8 = uint8
-    }
-
-    init(uint32 uint: UInt32) {
-        let anyoneCanPay = (uint & 0x80) == 0x80
-        let hasForkId = (uint & 0x40) == 0x40
-        let base: UInt8 = {
-            switch (uint & 0x1f) {
-            case 3:
-                return 3
-            case 2:
-                return 2
-            case 1:
-                return 1
-            default:
-                return 1
-            }
-        }()
-
-        var uint8 = base
-
-        if anyoneCanPay {
-            uint8 = SIGHASH_ANYONECANPAY + uint8
-        }
-
-        if hasForkId {
-            uint8 = SIGHASH_FORK_ID + uint8
-        }
-
-        self.uint8 = uint8
-    }
-
-    public var rawValue: UInt8 {
-        return uint8
-    }
-
-    public var uint32: UInt32 {
+    var uint32: UInt32 {
         return UInt32(rawValue)
     }
+}
 
-    private var outputType: UInt8 {
-        return self.uint8 & SIGHASH_OUTPUT_MASK
-    }
-    public var isAll: Bool {
-        return outputType == SIGHASH_ALL
-    }
-    public var isSingle: Bool {
-        return outputType == SIGHASH_SINGLE
-    }
-    public var isNone: Bool {
-        return outputType == SIGHASH_NONE
+public enum SighashFlags: UInt8, Equatable {
+    case SIGHASH_ALL = 1
+    case SIGHASH_NONE = 2
+    case SIGHASH_SINGLE = 3
+    case SIGHASH_FORKID = 0x40
+    case SIGHASH_ANYONECANPAY = 0x80
+}
+
+// Based on
+// https://github.com/bitcoin-sv/bitcoin-sv/blob/d9b12a23dbf0d2afc5f488fa077d762b302ba873/src/script/sighashtype.h#L37
+
+public struct SighashType {
+    public let sighash: UInt32
+
+    public var baseType: SighashBase {
+        let value = UInt8(sighash & UInt32(SIGHASH_OUTPUT_MASK))
+
+        switch value {
+        case 2:
+            return .none
+        case 3:
+            return .single
+        case 1:
+            return .all
+        default:
+            return .all
+        }
     }
 
     public var hasForkId: Bool {
-        return (self.uint8 & SIGHASH_FORK_ID) != 0
+        return (sighash & UInt32(SIGHASH_FORK_ID)) != 0
     }
-    public var isAnyoneCanPay: Bool {
-        return (self.uint8 & SIGHASH_ANYONECANPAY) != 0
+    public var hasAnyoneCanPay: Bool {
+        return (sighash & UInt32(SIGHASH_ANYONECANPAY)) != 0
     }
 
+    public var isAll: Bool {
+        return baseType == .all
+    }
+    public var isSingle: Bool {
+        return baseType == .single
+    }
+    public var isNone: Bool {
+        return baseType == .none
+    }
+
+    public init(i: Int) {
+        sighash = UInt32(truncatingIfNeeded: i)
+    }
+
+    public init(ui8: UInt8) {
+        sighash = UInt32(ui8)
+    }
+
+    public init(sighash: UInt32) {
+        self.sighash = sighash
+    }
+
+    public func withBaseType(_ baseType: SighashBase) -> Self {
+        return Self.init(sighash: (sighash & ~UInt32(SIGHASH_OUTPUT_MASK)) | UInt32(baseType.rawValue))
+    }
+
+    public func withForkValue(forkId: UInt32) -> Self {
+        return Self.init(sighash: (forkId << 8) | (sighash & 0xff))
+    }
+
+    public func withForkId(hasForkId: Bool) -> Self {
+        return Self.init(sighash: (sighash & ~UInt32(SIGHASH_FORK_ID)) | (hasForkId ? UInt32(SIGHASH_FORK_ID) : 0))
+    }
+
+    public func withAnyoneCanPay(anyoneCanPay: Bool) -> Self {
+        return Self.init(sighash: (sighash & ~UInt32(SIGHASH_ANYONECANPAY)) | (anyoneCanPay ? UInt32(SIGHASH_ANYONECANPAY) : 0))
+    }
+
+}
+
+extension SighashType {
     public struct BSV {
-        public static let ALL: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_ALL) // 01000001
-        public static let NONE: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_NONE) // 01000010
-        public static let SINGLE: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_SINGLE) // 01000011
-        public static let ALL_ANYONECANPAY: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_ALL + SIGHASH_ANYONECANPAY) // 11000001
-        public static let NONE_ANYONECANPAY: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_NONE + SIGHASH_ANYONECANPAY) // 11000010
-        public static let SINGLE_ANYONECANPAY: SighashType = SighashType(SIGHASH_FORK_ID + SIGHASH_SINGLE + SIGHASH_ANYONECANPAY) // 11000011
+        public static let ALL: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_ALL) // 01000001
+        public static let NONE: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_NONE) // 01000010
+        public static let SINGLE: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_SINGLE) // 01000011
+        public static let ALL_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_ALL + SIGHASH_ANYONECANPAY) // 11000001
+        public static let NONE_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_NONE + SIGHASH_ANYONECANPAY) // 11000010
+        public static let SINGLE_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_FORK_ID + SIGHASH_SINGLE + SIGHASH_ANYONECANPAY) // 11000011
     }
 
     public struct BTC {
-        public static let ALL: SighashType = SighashType(SIGHASH_ALL) // 00000001
-        public static let NONE: SighashType = SighashType(SIGHASH_NONE) // 00000010
-        public static let SINGLE: SighashType = SighashType(SIGHASH_SINGLE) // 00000011
-        public static let ALL_ANYONECANPAY: SighashType = SighashType(SIGHASH_ALL + SIGHASH_ANYONECANPAY) // 10000001
-        public static let NONE_ANYONECANPAY: SighashType = SighashType(SIGHASH_NONE + SIGHASH_ANYONECANPAY) // 10000010
-        public static let SINGLE_ANYONECANPAY: SighashType = SighashType(SIGHASH_SINGLE + SIGHASH_ANYONECANPAY) // 10000011
-    }
-}
-
-extension UInt8 {
-    public init(_ hashType: SighashType) {
-        self = hashType.uint8
-    }
-}
-
-extension UInt32 {
-    public init(_ hashType: SighashType) {
-        self = UInt32(UInt8(hashType))
+        public static let ALL: SighashType = SighashType(ui8: SIGHASH_ALL) // 00000001
+        public static let NONE: SighashType = SighashType(ui8: SIGHASH_NONE) // 00000010
+        public static let SINGLE: SighashType = SighashType(ui8: SIGHASH_SINGLE) // 00000011
+        public static let ALL_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_ALL + SIGHASH_ANYONECANPAY) // 10000001
+        public static let NONE_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_NONE + SIGHASH_ANYONECANPAY) // 10000010
+        public static let SINGLE_ANYONECANPAY: SighashType = SighashType(ui8: SIGHASH_SINGLE + SIGHASH_ANYONECANPAY) // 10000011
     }
 }
