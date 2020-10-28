@@ -224,6 +224,16 @@ extension Transaction {
         return Crypto.sha256sha256(data)
     }
 
+    func signatureHash(sigHashType: UInt32, nIn: Int, subScript: Script, value: UInt64, flags: TransactionSigHashFlags = .none) -> Data {
+        let sighash = SighashType(uint32: sigHashType)
+
+        if sighash.hasForkId && flags.contains(.scriptEnableSighashForkId) {
+            return Transaction.bip143_sighash(tx: self, nHashType: sighash, nIn: nIn, subScript: subScript, value: value)
+        }
+
+        return Transaction.legacySigHash(tx: self, nHashType: sighash, sighash: sigHashType, nIn: nIn, subScript: subScript)
+    }
+
     func sighash(nHashType: SighashType, nIn: Int, subScript: Script, value: UInt64, flags: TransactionSigHashFlags = .none) -> Data {
 
         // start with UAHF part (Bitcoin SV)
@@ -232,7 +242,8 @@ extension Transaction {
             return Transaction.bip143_sighash(tx: self, nHashType: nHashType, nIn: nIn, subScript: subScript, value: value)
         }
 
-        return Transaction.legacySigHash(tx: self, nHashType: nHashType, nIn: nIn, subScript: subScript)
+        return Data()
+//        return Transaction.legacySigHash(tx: self, nHashType: nHashType, nIn: nIn, subScript: subScript)
     }
 
     /// Generates a transaction digest for signing using BIP-143
@@ -248,13 +259,13 @@ extension Transaction {
             hashPrevouts = tx.hashPrevouts()
         }
 
-        if !nHashType.isAnyoneCanPay && (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
+        if !nHashType.isAnyoneCanPay && !nHashType.isSingle && !nHashType.isNone {
             hashSequence = tx.hashSequence()
         }
 
-        if (nHashType.rawValue & 0x1f != BSVSighashType.SINGLE.rawValue) && (nHashType.rawValue & 0x1f != BSVSighashType.NONE.rawValue) {
+        if !nHashType.isSingle && nHashType.isNone {
             hashOutputs = tx.hashOutputs()
-        } else if (nHashType.rawValue & 0x1f == BSVSighashType.SINGLE.rawValue) && nIn < tx.outputs.count {
+        } else if nHashType.isSingle && nIn < tx.outputs.count {
             hashOutputs = Crypto.sha256sha256(tx.outputs[nIn].serialized())
         }
 
@@ -279,68 +290,159 @@ extension Transaction {
     /// Generates the transaction digest for signing using the legacy algorithm
     ///
     /// This is used for all transaction validation before the August 2017 fork.
-    private static func legacySigHash(tx: Transaction, nHashType: SighashType, nIn: Int, subScript: Script) -> Data {
-        var txCopy = tx
+    private static func legacySigHash(tx: Transaction, nHashType: SighashType, sighash: UInt32, nIn: Int, subScript: Script) -> Data {
 
-        // Remove all OP_CODESEPARATOR from the subScript
-        var subScript = Script(chunks: subScript.scriptChunks)
-        try! subScript.deleteOccurrences(of: OpCode.OP_CODESEPARATOR)
+        // This algorithm is based on this
+        // https://github.com/paritytech/parity-bitcoin/blob/0a3e376c223bbcc6ff4ddfdcdfcf8182236072c4/script/src/sign.rs#L171
 
-        var blankInputs = txCopy.inputs.map({ TransactionInput(previousOutput: $0.previousOutput, signatureScript: Script().data, sequence: $0.sequence) })
-
-        blankInputs[nIn] = TransactionInput(previousOutput: blankInputs[nIn].previousOutput, signatureScript: subScript.data, sequence: blankInputs[nIn].sequence)
-
-        txCopy.inputs = blankInputs
-
-
-        if nHashType.isNone {
-            txCopy.outputs = []
-
-            // TODO Check tat this var modifies the array, not just the local var
-            for (index, var input) in txCopy.inputs.enumerated() {
-                if index != nIn {
-                    input.sequence = 0
-                }
-            }
-        } else if nHashType.isSingle {
-            // The SIGHASH_SINGLE bug.
-            // https://bitcointalk.org/index.php?topic=260595.0
-            if nIn > txCopy.outputs.count - 1 {
-                return Data(hex: "0000000000000000000000000000000000000000000000000000000000000001")
-            }
-
-            var outputs = txCopy.outputs
-            // TODO Check tat this var modifies the array, not just the local var
-            for (index, _) in outputs.enumerated() {
-                if index < nIn {
-                    outputs[index] = TransactionOutput(
-                        value: .max,
-                        lockingScript: Script().data
-                    )
-                }
-            }
-
-            // TODO Check tat this var modifies the array, not just the local var
-            for (index, var input) in txCopy.inputs.enumerated() {
-                if index != nIn {
-                    input.sequence = 0
-                }
-            }
-
-            txCopy.outputs = outputs
-
+        if nIn >= tx.inputs.count {
+            return Data(hex: "0000000000000000000000000000000000000000000000000000000000000001")
         }
 
-        // else sighash all
-
-        if nHashType.isAnyoneCanPay {
-            txCopy.inputs = [txCopy.inputs[nIn]]
+        if nHashType.isSingle && nIn >= tx.outputs.count {
+            return Data(hex: "0000000000000000000000000000000000000000000000000000000000000001")
         }
 
-        let data = txCopy.serialized()
-        let hash = Data(Crypto.sha256sha256(data).reversed())
+        let scriptPubKey = try! Script(chunks: subScript.scriptChunks)
+            .deleteOccurrences(of: OpCode.OP_CODESEPARATOR)
 
-        return hash
+        let inputs: [TransactionInput] = {
+            if nHashType.isAnyoneCanPay {
+                let input = tx.inputs[nIn]
+                return [TransactionInput(
+                    previousOutput: input.previousOutput,
+                    signatureScript: scriptPubKey.data,
+                    sequence: input.sequence
+                )]
+            } else {
+                return tx
+                    .inputs
+                    .enumerated()
+                    .map({ n, input in
+                        TransactionInput(
+                            previousOutput: input.previousOutput,
+                            signatureScript: n == nIn ? scriptPubKey.data : Data(),
+                            sequence: ((nHashType.isSingle || nHashType.isNone) && (n != nIn)) ? 0 : input.sequence
+                        )
+                    })
+            }
+        }()
+
+        let outputs: [TransactionOutput] = {
+            if nHashType.isAll {
+                return tx.outputs
+            } else if nHashType.isSingle {
+                return tx
+                    .outputs
+                    .prefix(upTo: nIn + 1)
+                    .enumerated()
+                    .map { n, out in
+                        if n < nIn {
+                            return TransactionOutput.default
+                        }
+                        return out
+                    }
+            } else {
+                return []
+            }
+        }()
+
+        let tx = Transaction(
+            version: tx.version,
+            inputs: inputs,
+            outputs: outputs,
+            lockTime: tx.lockTime
+        )
+
+        var buffer = Data()
+        buffer += tx.serialized()
+        buffer += sighash
+
+        return Data(Crypto.sha256sha256(buffer).reversed())
+//
+//
+//
+//
+//
+//
+//        var txCopy = Transaction.deserialize(tx.serialized())
+//
+//        // Remove all OP_CODESEPARATOR from the subScript
+//        let subScript = try! Script(data: subScript.data)!
+//                    .deleteOccurrences(of: OpCode.OP_CODESEPARATOR)
+//
+//        var blankedScriptInputs = txCopy
+//            .inputs
+//            .map({ TransactionInput(
+//                    previousOutput: $0.previousOutput,
+//                    signatureScript: Script().data,
+//                    sequence: $0.sequence
+//            )})
+//
+//        blankedScriptInputs[nIn] = TransactionInput(
+//            previousOutput: blankedScriptInputs[nIn].previousOutput,
+//            signatureScript: subScript.data,
+//            sequence: blankedScriptInputs[nIn].sequence
+//        )
+//
+//        txCopy.inputs = blankedScriptInputs
+//
+//        if nHashType.isNone {
+//            txCopy.outputs = []
+//
+//            var inputs = [TransactionInput]()
+//
+//            for (index, input) in txCopy.inputs.enumerated() {
+//                if index != nIn {
+//                    var input = input
+//                    input.sequence = 0
+//                    inputs.append(input)
+//                } else {
+//                    inputs.append(input)
+//                }
+//            }
+//            txCopy.inputs = inputs
+//
+//        } else if nHashType.isSingle {
+//            // The SIGHASH_SINGLE bug.
+//            // https://bitcointalk.org/index.php?topic=260595.0
+//            if nIn > txCopy.outputs.count - 1 {
+//                return Data(hex: "0000000000000000000000000000000000000000000000000000000000000001")
+//            }
+//
+//            var outputs = Array(txCopy.outputs[0..<nIn + 1])
+//            for i in 0..<nIn + 1 {
+//                if i < nIn {
+//                    outputs[i] = TransactionOutput.default
+//                }
+//            }
+//            txCopy.outputs = outputs
+//
+//            var inputs = [TransactionInput]()
+//            for i in 0..<txCopy.inputs.count {
+//                if i != nIn {
+//                    var input = txCopy.inputs[i]
+//                    input.sequence = 0
+//                    inputs.append(input)
+//                } else {
+//                    inputs.append(txCopy.inputs[i])
+//                }
+//            }
+//
+//            txCopy.inputs = inputs
+//        }
+//
+//        // else sighash all
+//
+//        if nHashType.isAnyoneCanPay {
+//            txCopy.inputs = [txCopy.inputs[nIn]]
+//        }
+//
+//        var data = txCopy.serialized()
+//        data += sighash
+//        let hash = Data(Crypto.sha256sha256(data).reversed())
+//
+//        return hash
     }
 
     /// Sign and return the signature
@@ -353,7 +455,6 @@ extension Transaction {
     }
 
 }
-
 
 struct TransactionSigHashFlags: OptionSet {
     let rawValue: Int

@@ -12,37 +12,57 @@ import XCTest
 
 class TransactionTests: XCTestCase {
 
-    func testTransction() {
+    let tx2idhex =
+      "8c9aa966d35bfeaf031409e0001b90ccdafd8d859799eb945a3c515b8260bcf2"
+    static let tx2hex =
+      "01000000029e8d016a7b0dc49a325922d05da1f916d1e4d4f0cb840c9727f3d22ce8d1363f000000008c493046022100e9318720bee5425378b4763b0427158b1051eec8b08442ce3fbfbf7b30202a44022100d4172239ebd701dae2fbaaccd9f038e7ca166707333427e3fb2a2865b19a7f27014104510c67f46d2cbb29476d1f0b794be4cb549ea59ab9cc1e731969a7bf5be95f7ad5e7f904e5ccf50a9dc1714df00fbeb794aa27aaff33260c1032d931a75c56f2ffffffffa3195e7a1ab665473ff717814f6881485dc8759bebe97e31c301ffe7933a656f020000008b48304502201c282f35f3e02a1f32d2089265ad4b561f07ea3c288169dedcf2f785e6065efa022100e8db18aadacb382eed13ee04708f00ba0a9c40e3b21cf91da8859d0f7d99e0c50141042b409e1ebbb43875be5edde9c452c82c01e3903d38fa4fd89f3887a52cb8aea9dc8aec7e2c9d5b3609c03eb16259a2537135a1bf0f9c5fbbcbdbaf83ba402442ffffffff02206b1000000000001976a91420bb5c3bfaef0231dc05190e7f1c8e22e098991e88acf0ca0100000000001976a9149e3e2d23973a04ec1b02be97c30ab9f2f27c3b2c88ac00000000"
+    let tx2buf = Data(hex: tx2hex)
 
-        let txIdHex = "8c9aa966d35bfeaf031409e0001b90ccdafd8d859799eb945a3c515b8260bcf2"
+    func testSigHashSingleBug() {
+        var tx = Transaction.deserialize(tx2buf)
+        tx.outputs = [tx.outputs[0]]
 
-        let txHex = "01000000013349f331edd46ff1a4a09c0ec6ca074d2e25ecefeba6fdd1a331c06f98592bee0100000023002102c8b519fa21f8205a7086378a3806a312a3e3c918899cb18c2c8a775b4a5be462ffffffff0210270000000000001976a91463cb92e6d497e36390c60ff3b1bac0c97636738388ac48058900000000001976a91463cb92e6d497e36390c60ff3b1bac0c97636738388ac00000000"
+        let hashBuf = tx.sighash(nHashType: SighashType.BTC.SINGLE, nIn: 1, subScript: Script(), value: 0)
 
-//        let txHex = "01000000029e8d016a7b0dc49a325922d05da1f916d1e4d4f0cb840c9727f3d22ce8d1363f000000008c493046022100e9318720bee5425378b4763b0427158b1051eec8b08442ce3fbfbf7b30202a44022100d4172239ebd701dae2fbaaccd9f038e7ca166707333427e3fb2a2865b19a7f27014104510c67f46d2cbb29476d1f0b794be4cb549ea59ab9cc1e731969a7bf5be95f7ad5e7f904e5ccf50a9dc1714df00fbeb794aa27aaff33260c1032d931a75c56f2ffffffffa3195e7a1ab665473ff717814f6881485dc8759bebe97e31c301ffe7933a656f020000008b48304502201c282f35f3e02a1f32d2089265ad4b561f07ea3c288169dedcf2f785e6065efa022100e8db18aadacb382eed13ee04708f00ba0a9c40e3b21cf91da8859d0f7d99e0c50141042b409e1ebbb43875be5edde9c452c82c01e3903d38fa4fd89f3887a52cb8aea9dc8aec7e2c9d5b3609c03eb16259a2537135a1bf0f9c5fbbcbdbaf83ba402442ffffffff02206b1000000000001976a91420bb5c3bfaef0231dc05190e7f1c8e22e098991e88acf0ca0100000000001976a9149e3e2d23973a04ec1b02be97c30ab9f2f27c3b2c88ac00000000"
-        let txBuf = Data(hex: txHex)
+        XCTAssertEqual(hashBuf.hex, "0000000000000000000000000000000000000000000000000000000000000001")
+    }
 
-        let tx = Transaction.deserialize(txBuf)
+    func testKnowntx() {
+        let txraw = "907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229"
 
-        dump(tx)
+//        "",
+//        2,
+//        1864164639,
+//
 
-        let helper = BSVSignatureHashHelper(hashType: SighashType.BSV.ALL)
+        let tx = Transaction.deserialize(Data(hex: txraw))
 
-        let sig = helper.createSignatureHash(of: tx, for: tx.outputs[0], inputIndex: Int(0))
+        let sighash = UInt32(1864164639)
+        let nHashType = SighashType(uint32: sighash)
 
-        let sig2 = helper.createSignatureHash(of: tx, for: tx.outputs[1], inputIndex: Int(0))
-
-        print(sig.hex)
-
-
-        // Should be serializable
-        XCTAssertEqual(tx.serialized().hex, txHex)
-
-        // Should calculate the txId
-        XCTAssertEqual(tx.txID, txIdHex)
+        let hash = tx.signatureHash(sigHashType: sighash, nIn: 2, subScript: Script(), value: 0)
 
 
+        XCTAssertEqual(hash.hex, "31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e")
+    }
 
+    func testKnowntx2() {
+        let txraw = "b1c0b71804dff30812b92eefb533ac77c4b9fdb9ab2f77120a76128d7da43ad70c20bbfb990200000002536392693e6001bc59411aebf15a3dc62a6566ec71a302141b0c730a3ecc8de5d76538b30f55010000000665535252ac514b740c6271fb9fe69fdf82bf98b459a7faa8a3b62f3af34943ad55df4881e0d93d3ce0ac0200000000c4158866eb9fb73da252102d1e64a3ce611b52e873533be43e6883137d0aaa0f63966f060000000001abffffffff04a605b604000000000851006a656a630052f49a0300000000000252515a94e1050000000009abac65ab0052abab00fd8dd002000000000651535163526a2566852d"
 
+        let tx = Transaction.deserialize(Data(hex: txraw))
+        let serial = tx.serialized().hex
+
+        XCTAssertEqual(txraw, serial)
+
+        let sighash = UInt32(truncatingIfNeeded: -1718831517)
+//        let chunks = ChunkHelpers.chunksFromAsmString("ac5363")
+//        let scriptData = ChunkHelpers.chunksToBuffer(chunks)
+
+        let script = Script(hex: "ac5363")!
+
+        let hash = tx.signatureHash(sigHashType: sighash, nIn: 0, subScript: script, value: 0)
+
+        XCTAssertEqual(hash.hex, "b0dc030661783dd9939e4bf1a6dfcba809da2017e1b315a6312e5942d714cf05")
     }
 
     func testVectors() {
@@ -113,17 +133,28 @@ class TransactionTests: XCTestCase {
             let nHashType = vector[3] as! NSNumber
             let sigHashBuf = Data(hex: vector[4] as! String)
 
+            let script = Script(data: scriptBuf)!
+
             let tx = Transaction.deserialize(txBuf)
 
             let utxo = tx.inputs.first(where: { $0.signatureScript.hex == scriptBuf.hex })
 
             XCTAssertEqual(tx.serialized().hex, txBuf.hex)
 
-            let helper = BSVSignatureHashHelper(hashType: SighashType.BSV.ALL)
+            var sighashValue = nHashType.intValue
+            var sighash = UInt32(truncatingIfNeeded: sighashValue)
+            let sighashType = SighashType(int: nHashType.intValue)
 
-            helper.createSignatureHash(of: tx, for: tx.outputs[0], inputIndex: Int(nIn))
+            var transactionSigHashFlags = TransactionSigHashFlags()
+            if sighashType.hasForkId {
+                transactionSigHashFlags = .scriptEnableSighashForkId
+            }
 
-            print("")
+            let hash = tx.signatureHash(sigHashType: sighash, nIn: Int(truncating: nIn), subScript: script, value: 0, flags: .none)
+
+//            let sighash = tx.sighash(nHashType: _nHashType, nIn: Int(truncating: nIn), subScript: Script(data: scriptBuf)!, value: 0, flags: transactionSigHashFlags)
+
+            XCTAssertEqual(hash.hex, sigHashBuf.hex)
         }
 
     }

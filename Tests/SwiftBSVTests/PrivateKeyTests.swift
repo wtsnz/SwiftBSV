@@ -48,6 +48,20 @@ class PrivateKeyTests: XCTestCase {
         XCTAssertEqual(PrivateKey(wif: encmu)?.toWif(), encmu)
     }
 
+    func testFrom() {
+        let p = "cT5XuiE2xs65HnMMgKRd4vkbNukYqqtWUzL5SMRPPE4VvT3FT3xn"
+
+        let privateKey = PrivateKey(wif: p, network: .testnet)
+
+        XCTAssertEqual(privateKey?.toWifData().hex, "efa404f0ddada148bed16adb2b8b0be3736cc890f2f58396b6cf9df2548cd6561101")
+
+        let publicKey = privateKey?.publicKey
+
+        let address = Address(publicKey!, network: .testnet)
+
+        XCTAssertEqual(address.toString(), "mpcd4bwYbTiqqZZ2s26eyv1MZTpnbMW6R7")
+    }
+
 //    func testBitcoin() {
 //        let address = "1MVEQHYUv1bWiYJB77NNEEEdbmNFEoW5q6"
 //        let rawPk = "0e66055a963cc3aecb185cf795de476cf290c88db671297da041b7f7377e6f9c"

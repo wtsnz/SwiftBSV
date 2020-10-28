@@ -593,6 +593,10 @@ class OpCodeTests: XCTestCase {
 
     func testOpCheckSigBTC() {
 
+        XCTFail("TODO: Not implemented yet")
+
+        return;
+        
         let opcode = OpCode.OP_CHECKSIG
 
         // BTC Transaction in testnet3
@@ -682,6 +686,11 @@ class OpCodeTests: XCTestCase {
     }
 
     func testOpCheckSigBSV() {
+
+        XCTFail("TODO: Not implemented yet")
+
+        return;
+
         let opcode = OpCode.OP_CHECKSIG
 
         // BCH Transaction

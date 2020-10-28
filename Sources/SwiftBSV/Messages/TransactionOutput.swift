@@ -65,6 +65,13 @@ public struct TransactionOutput {
         let lockingScript = byteStream.read(Data.self, count: Int(scriptLength.underlyingValue))
         return TransactionOutput(value: value, lockingScript: lockingScript)
     }
+
+    /// A blank transaction output
+    static let `default` = TransactionOutput(
+        value: UInt64.max,
+        lockingScript: Data()
+    )
+
 }
 
 // MARK: - TransactionOutput+Script
