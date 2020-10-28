@@ -494,7 +494,7 @@ extension Script {
     }
 
     public static func buildPublicKeyUnlockingScript(signature: Data, pubkey: PublicKey, hashType: SighashType) -> Data {
-        var data: Data = Data([UInt8(signature.count + 1)]) + signature + hashType.uint8
+        var data: Data = Data([UInt8(signature.count + 1)]) + signature + hashType.rawValue
         data += VarInt(pubkey.toDer().count).serialized()
         data += pubkey.toDer()
         return data

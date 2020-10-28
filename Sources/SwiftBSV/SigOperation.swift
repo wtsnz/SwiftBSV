@@ -33,7 +33,7 @@ class SigOperations {
     ///   - type: the sig operation type (sig, or pubkey)
     ///   - addressString: The addressStr coresponding to this (txHashBuf, txOutNum, nScriptChunk) where we are going to sign and insert the signature or public key.
     ///   - nHashType: Usually = Sig.SIGHASH_ALL | Sig.SIGHASH_FORKID
-    func setOne(txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType, addressString: String, nHashType: SighashType = BSVSighashType.ALL) {
+    func setOne(txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType, addressString: String, nHashType: SighashType = SighashType.BSV.ALL) {
         let label = txHashBuf.hex + ":" + String(txOutNum)
         let sigOperation = SigOperation(nScriptChunk: nScriptChunk, type: type, addressString: addressString, nHashType: nHashType)
         map[label] = [sigOperation]
@@ -45,7 +45,7 @@ class SigOperations {
         map[label] = operations
     }
 
-    func addOne(txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType = .sig, addressString: String, nHashType: SighashType = BSVSighashType.ALL) {
+    func addOne(txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType = .sig, addressString: String, nHashType: SighashType = SighashType.BSV.ALL) {
         var operations = get(txHashBuf: txHashBuf, txOutNum: txOutNum) ?? []
         let sigOperation = SigOperation(nScriptChunk: nScriptChunk, type: type, addressString: addressString, nHashType: nHashType)
         operations.append(sigOperation)

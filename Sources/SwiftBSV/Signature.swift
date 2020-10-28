@@ -44,9 +44,9 @@ struct Signature {
             return nil
         }
 
-        self.nHashType = BSVSighashType(rawValue: nHashType)
+        self.nHashType = SighashType(nHashType)
         if self.nHashType == nil {
-            self.nHashType = BTCSighashType(rawValue: nHashType)
+            self.nHashType = SighashType(nHashType)
         }
 
         self.r = sig.r

@@ -97,7 +97,7 @@ class TxBuilder {
     }
 
     @discardableResult
-    func inputFromPubKeyHash(txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, pubKey: PublicKey, nSequence: UInt32 = 0xffffffff, nHashType: SighashType = BSVSighashType.ALL) -> Self {
+    func inputFromPubKeyHash(txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, pubKey: PublicKey, nSequence: UInt32 = 0xffffffff, nHashType: SighashType = SighashType.BSV.ALL) -> Self {
 
         let transactionInput = TransactionInput.fromPubKeyHashOut(
             txHashBuf: txHashBuffer,
@@ -289,7 +289,7 @@ class TxBuilder {
 
     // MARK: - Signatures
 
-    func getSig(privateKey: PrivateKey, nHashType: BSVSighashType = .ALL, nIn: Int, subScript: Script, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Data {
+    func getSig(privateKey: PrivateKey, nHashType: SighashType = SighashType.BSV.ALL, nIn: Int, subScript: Script, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Data {
         var value = UInt64()
 
         if nHashType.hasForkId && flags.contains(.scriptEnableSighashForkId) {
@@ -305,7 +305,7 @@ class TxBuilder {
 
     /// Sign the input with the private key. Only supports PayToPublicKeyHash inputs
     @discardableResult
-    func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, nHashType: BSVSighashType = .ALL, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Self {
+    func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, nHashType: SighashType = SighashType.BSV.ALL, flags: TransactionSigHashFlags = .scriptEnableSighashForkId) -> Self {
 
         var nScriptChunk = nScriptChunk
         let txIn = transaction.inputs[nIn]

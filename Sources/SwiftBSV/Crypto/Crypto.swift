@@ -94,25 +94,28 @@ public final class Crypto {
     }
 
     public static func verifySigData(for tx: Transaction, inputIndex: Int, utxo: TransactionOutput, sigData: Data, pubKeyData: Data) throws -> Bool {
-        // Hash type is one byte tacked on to the end of the signature. So the signature shouldn't be empty.
-        guard !sigData.isEmpty else {
-            throw ScriptMachineError.error("SigData is empty.")
-        }
-        // Extract hash type from the last byte of the signature.
-        let helper: SignatureHashHelper
-        if let hashType = BCHSighashType(rawValue: sigData.last!) {
-            helper = BCHSignatureHashHelper(hashType: hashType)
-        } else if let hashType = BTCSighashType(rawValue: sigData.last!) {
-            helper = BTCSignatureHashHelper(hashType: hashType)
-        } else {
-            throw ScriptMachineError.error("Unknown sig hash type")
-        }
 
-        // Strip that last byte to have a pure signature.
-        let sighash: Data = helper.createSignatureHash(of: tx, for: utxo, inputIndex: inputIndex)
-        let signature: Data = sigData.dropLast()
+        fatalError("TODO")
 
-        return try ECDSA.verifySignature(signature, message: sighash, publicKeyData: pubKeyData)
+//        // Hash type is one byte tacked on to the end of the signature. So the signature shouldn't be empty.
+//        guard !sigData.isEmpty else {
+//            throw ScriptMachineError.error("SigData is empty.")
+//        }
+//        // Extract hash type from the last byte of the signature.
+//        let helper: SignatureHashHelper
+//        if let hashType = BCHSighashType(rawValue: sigData.last!) {
+//            helper = BCHSignatureHashHelper(hashType: hashType)
+//        } else if let hashType = BTCSighashType(rawValue: sigData.last!) {
+//            helper = BTCSignatureHashHelper(hashType: hashType)
+//        } else {
+//            throw ScriptMachineError.error("Unknown sig hash type")
+//        }
+//
+//        // Strip that last byte to have a pure signature.
+//        let sighash: Data = helper.createSignatureHash(of: tx, for: utxo, inputIndex: inputIndex)
+//        let signature: Data = sigData.dropLast()
+//
+//        return try ECDSA.verifySignature(signature, message: sighash, publicKeyData: pubKeyData)
     }
 
     public static func computePublicKey(fromPrivateKey privateKey: Data, compressed: Bool) -> Data {
