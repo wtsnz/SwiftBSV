@@ -25,7 +25,7 @@
 
 import Foundation
 
-public struct TransactionOutput {
+public struct TransactionOutput: Equatable {
     /// Transaction Value
     public let value: UInt64
     /// Length of the pk_script

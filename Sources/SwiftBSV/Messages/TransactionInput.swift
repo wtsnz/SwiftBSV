@@ -25,7 +25,7 @@
 
 import Foundation
 
-public struct TransactionInput {
+public struct TransactionInput: Equatable {
     /// The previous output transaction reference, as an OutPoint structure
     public let previousOutput: TransactionOutPoint
     /// The length of the signature script

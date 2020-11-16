@@ -26,7 +26,7 @@
 import Foundation
 
 /// tx describes a bitcoin transaction, in reply to getdata
-public struct Transaction {
+public struct Transaction: Equatable {
     /// Transaction data format version (note, this is signed)
     public var version: UInt32
     /// If present, always 0001, and indicates the presence of witness data

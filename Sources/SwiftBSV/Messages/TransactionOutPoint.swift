@@ -25,7 +25,7 @@
 
 import Foundation
 
-public struct TransactionOutPoint {
+public struct TransactionOutPoint: Equatable {
     /// The hash of the referenced transaction.
     public let hash: Data
     /// The index of the specific output in the transaction. The first output is 0, etc.
