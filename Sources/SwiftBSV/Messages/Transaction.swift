@@ -164,7 +164,7 @@ extension Transaction {
     mutating func fillSig(nIn: Int, nScriptChunk: Int, sig: Data, sighashType: SighashType, publicKey: PublicKey) {
         var inputs = self.inputs
         let input = inputs[nIn]
-        let sigWithType = sig + [sighashType.baseType.rawValue] // TODO might be wrong
+        let sigWithType = sig + [UInt8(sighashType.sighash)]
         let unlockingScript = try! Script()
             .appendData(sigWithType)
             .appendData(publicKey.toDer())
