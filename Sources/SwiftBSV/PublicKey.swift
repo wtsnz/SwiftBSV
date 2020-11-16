@@ -15,7 +15,7 @@ public struct PublicKey {
 
     public var isCompressed: Bool
 
-    var address: Address {
+    public var address: Address {
         return Address(self)
     }
 

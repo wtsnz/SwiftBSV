@@ -16,9 +16,9 @@ enum TxBuilderError: Error {
     case inputAmountLessThanOutputAmount
 }
 
-class TxBuilder {
+public class TxBuilder {
 
-    private(set) var transaction: Transaction = .empty
+    private(set) public var transaction: Transaction = .empty
     private var transactionInputs: [TransactionInput] = []
     private var transactionOutputs: [TransactionOutput] = []
 
@@ -38,43 +38,43 @@ class TxBuilder {
     private(set) var dust: UInt64 = Network.mainnet.txBuilder.dust
     private(set) var feePerKbNum: Float = Network.mainnet.txBuilder.feePerKb
 
-    init() {
+    public init() {
 
     }
 
     @discardableResult
-    func setNLockTime(_ nLockTime: UInt32) -> Self {
+    public func setNLockTime(_ nLockTime: UInt32) -> Self {
         self.nLockTime = nLockTime
         return self
     }
 
     @discardableResult
-    func setVersion(_ version: UInt32) -> Self {
+    public func setVersion(_ version: UInt32) -> Self {
         self.version = version
         return self
     }
 
     @discardableResult
-    func setFeePerKb(_ fee: Float) -> Self {
+    public func setFeePerKb(_ fee: Float) -> Self {
         self.feePerKbNum = fee
         return self
     }
 
     @discardableResult
-    func setChangeAddress(_ changeAddress: Address) -> Self {
+    public func setChangeAddress(_ changeAddress: Address) -> Self {
         let script: Script = Script.buildPublicKeyHashOut(pubKeyHash: changeAddress.hashBuffer)
         setChangeScript(script)
         return self
     }
 
     @discardableResult
-    func setChangeScript(_ changeScript: Script) -> Self {
+    public func setChangeScript(_ changeScript: Script) -> Self {
         self.changeScript = changeScript
         return self
     }
 
     @discardableResult
-    func inputFromScript(_ txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, script: Script, nSequence: UInt32) -> Self {
+    public func inputFromScript(_ txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, script: Script, nSequence: UInt32) -> Self {
         let txIn = TransactionInput(
             previousOutput: TransactionOutPoint(
                 hash: txHashBuffer,
@@ -91,13 +91,13 @@ class TxBuilder {
     }
 
     @discardableResult
-    func addSigOperation(_ txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType, addressString: String, nHashType: SighashType) -> Self {
+    public func addSigOperation(_ txHashBuf: Data, txOutNum: UInt32, nScriptChunk: UInt32, type: SigOperation.OperationType, addressString: String, nHashType: SighashType) -> Self {
         sigOperations.addOne(txHashBuf: txHashBuf, txOutNum: txOutNum, nScriptChunk: nScriptChunk, addressString: addressString, nHashType: nHashType)
         return self
     }
 
     @discardableResult
-    func inputFromPubKeyHash(txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, pubKey: PublicKey, nSequence: UInt32 = 0xffffffff, nHashType: SighashType = SighashType.BSV.ALL) -> Self {
+    public func inputFromPubKeyHash(txHashBuffer: Data, txOutNum: UInt32, txOut: TransactionOutput, pubKey: PublicKey, nSequence: UInt32 = 0xffffffff, nHashType: SighashType = SighashType.BSV.ALL) -> Self {
 
         let transactionInput = TransactionInput.fromPubKeyHashOut(
             txHashBuf: txHashBuffer,
@@ -118,14 +118,14 @@ class TxBuilder {
     }
 
     @discardableResult
-    func outputToAddress(value: UInt64, address: Address) -> Self {
+    public func outputToAddress(value: UInt64, address: Address) -> Self {
         let script: Script = Script.buildPublicKeyHashOut(pubKeyHash: address.hashBuffer)
         outputToScript(value: value, script: script)
         return self
     }
 
     @discardableResult
-    func outputToScript(value: UInt64, script: Script) -> Self {
+    public func outputToScript(value: UInt64, script: Script) -> Self {
         let txOut = TransactionOutput(value: value, lockingScript: script.data)
         transactionOutputs.append(txOut)
         return self
@@ -210,7 +210,7 @@ class TxBuilder {
     }
 
     @discardableResult
-    func build(useAllInputs: Bool) throws -> TxBuilder {
+    public func build(useAllInputs: Bool) throws -> TxBuilder {
         var minFeeAmount = UInt64()
         self.changeAmount = 0
 
@@ -305,7 +305,7 @@ class TxBuilder {
 
     /// Sign the input with the private key. Only supports PayToPublicKeyHash inputs
     @discardableResult
-    func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, sighashType: SighashType = SighashType.BSV.ALL, signatureVersion: SignatureVersion = .forkId) -> Self {
+    public func signInTx(nIn: Int, privateKey: PrivateKey, txOut: TransactionOutput? = nil, nScriptChunk: Int? = nil, sighashType: SighashType = SighashType.BSV.ALL, signatureVersion: SignatureVersion = .forkId) -> Self {
 
         var nScriptChunk = nScriptChunk
         let txIn = transaction.inputs[nIn]

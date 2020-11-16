@@ -8,9 +8,9 @@
 
 import Foundation
 
-struct SigOperation {
+public struct SigOperation {
 
-    enum OperationType {
+    public enum OperationType {
         case sig
         case pubkey
     }

@@ -19,14 +19,14 @@ import Foundation
  * which deal with a base64 string representing the compressed format of a
  * signature.
  */
-struct BitcoinSignedMessage {
+public struct BitcoinSignedMessage {
 
     /// Sign the message with the private key
     /// - Parameters:
     ///   - message: the message you'd like to sign
     ///   - privateKey: the private key to sign with
     /// - Returns: A string containing the signed signature
-    static func sign(message: String, privateKey: PrivateKey) -> String {
+    public static func sign(message: String, privateKey: PrivateKey) -> String {
         let messageData = message.data(using: .utf8)!
         let hashBuf = magicHash(message: messageData)
         let (sig, recoveryId) = Crypto.signCompact(hashBuf, privateKey: privateKey)
@@ -37,7 +37,7 @@ struct BitcoinSignedMessage {
         return signature!.toBuffer().base64EncodedString()
     }
 
-    static func verify(message: String, signature: String, address: Address) -> Bool {
+    public static func verify(message: String, signature: String, address: Address) -> Bool {
         let messageData = message.data(using: .utf8)!
         let hashBuf = magicHash(message: messageData)
         guard let sigBuffer = Data(base64Encoded: signature) else {

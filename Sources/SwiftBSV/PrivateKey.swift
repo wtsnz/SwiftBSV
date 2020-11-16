@@ -20,17 +20,17 @@ public struct PrivateKey {
     public let network: Network
 
     /// The raw private key data
-    var data: Data {
+    public var data: Data {
         return bn.data
     }
 
     /// Return the associated Public Key
-    var publicKey: PublicKey {
+    public var publicKey: PublicKey {
         let publicKeyData = Crypto.computePublicKey(fromPrivateKey: data, compressed: true)
         return PublicKey(fromDer: publicKeyData)!
     }
 
-    var address: Address {
+    public var address: Address {
         return Address(self, network: network)
     }
 

@@ -49,8 +49,8 @@ public struct Bip32 {
     let childIndex: UInt32
     let chainCode: Data
 
-    let privateKey: PrivateKey?
-    let publicKey: PublicKey
+    public let privateKey: PrivateKey?
+    public let publicKey: PublicKey
 
     public var address: Address {
         return Address(publicKey, network: network)
